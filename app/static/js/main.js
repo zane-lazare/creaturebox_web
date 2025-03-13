@@ -28,10 +28,9 @@ document.addEventListener('DOMContentLoaded', function() {
   });
   
   // Add current year to footer
-  const footerYear = document.querySelector('.main-footer');
-  if (footerYear) {
-    const year = new Date().getFullYear();
-    footerYear.innerHTML = footerYear.innerHTML.replace('{{ now.year }}', year);
+  const currentYearSpan = document.getElementById('current-year');
+  if (currentYearSpan) {
+    currentYearSpan.textContent = new Date().getFullYear();
   }
   
   // Simulate data for dashboard in development mode

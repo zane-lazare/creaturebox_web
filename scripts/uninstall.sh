@@ -13,9 +13,9 @@ NC='\033[0m' # No Color
 
 # Print banner
 echo -e "${RED}"
-echo "=============================================="
+echo "==============================================="
 echo "  Creaturebox Web Interface Uninstaller"
-echo "=============================================="
+echo "==============================================="
 echo -e "${NC}"
 
 # Default installation directory
@@ -77,9 +77,9 @@ fi
 
 # Print success message
 echo -e "${GREEN}"
-echo "=============================================="
+echo "==============================================="
 echo "  Uninstallation Complete!"
-echo "=============================================="
+echo "==============================================="
 echo -e "${NC}"
 
 if [[ "$keep_data" == [yY] || "$keep_data" == [yY][eE][sS] ]]; then

@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="auth-container">
+    <div class="auth-card">
+        <div class="auth-header">
+            <h2>Creaturebox Login</h2>
+            <p>Enter your password to access the Creaturebox Web Interface</p>
+        </div>
+        
+        <form class="auth-form" method="post" action="{{ url_for('auth.login') }}">
+            {{ form.hidden_tag() }}
+            
+            <div class="form-group">
+                {{ form.password.label }}
+                {{ form.password(class="form-control") }}
+                {% if form.password.errors %}
+                <div class="errors">
+                    {% for error in form.password.errors %}
+                    <span class="error">{{ error }}</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+            
+            <div class="form-actions">
+                {{ form.submit(class="btn primary") }}
+            </div>
+        </form>
+    </div>
+</section>
+{% endblock %}
+
+{% block styles %}
+<style>
+    .main-header, .main-footer {
+        display: none;
+    }
+    
+    body {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        background: linear-gradient(135deg, #121212, #1e1e1e);
+    }
+    
+    .container {
+        width: 100%;
+        max-width: 100%;
+        margin: 0;
+        padding: 0;
+    }
+    
+    .auth-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+    }
+    
+    .auth-card {
+        background: rgba(30, 30, 30, 0.8);
+        border-radius: 8px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+        padding: 2rem;
+        width: 100%;
+        max-width: 400px;
+    }
+    
+    .auth-header {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+    
+    .auth-header h2 {
+        color: #57bb8a;
+        margin-bottom: 0.5rem;
+    }
+    
+    .auth-form .form-group {
+        margin-bottom: 1.5rem;
+    }
+    
+    .auth-form label {
+        display: block;
+        margin-bottom: 0.5rem;
+        color: #ffffff;
+    }
+    
+    .auth-form .form-control {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #333;
+        border-radius: 4px;
+        background: #2a2a2a;
+        color: #ffffff;
+    }
+    
+    .auth-form .form-actions {
+        text-align: center;
+    }
+    
+    .auth-form .btn {
+        padding: 0.75rem 2rem;
+    }
+    
+    .errors {
+        color: #ff6b6b;
+        margin-top: 0.5rem;
+        font-size: 0.875rem;
+    }
+</style>
+{% endblock %}

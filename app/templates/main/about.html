@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="about">
+    <div class="card">
+        <h2>About Creaturebox Web Interface</h2>
+        
+        <div class="about-content">
+            <p>
+                The Creaturebox Web Interface provides a convenient way to manage and control your 
+                Creaturebox/Mothbox device directly from your web browser.
+            </p>
+            
+            <h3>Features</h3>
+            <ul>
+                <li>View system status and information</li>
+                <li>Browse and manage captured photos</li>
+                <li>Control camera and lighting</li>
+                <li>Configure schedules and settings</li>
+                <li>Manage system operations</li>
+            </ul>
+            
+            <h3>Version Information</h3>
+            <table class="info-table">
+                <tr>
+                    <th>Web Interface Version:</th>
+                    <td>1.0.0</td>
+                </tr>
+                <tr>
+                    <th>Creaturebox Version:</th>
+                    <td>Unknown</td>
+                </tr>
+                <tr>
+                    <th>System:</th>
+                    <td>Raspberry Pi 5</td>
+                </tr>
+            </table>
+            
+            <h3>Support</h3>
+            <p>
+                For support or more information, please refer to the 
+                <a href="{{ url_for('main.index') }}">documentation</a>.
+            </p>
+        </div>
+    </div>
+</section>
+{% endblock %}

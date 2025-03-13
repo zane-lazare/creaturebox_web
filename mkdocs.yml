@@ -1,0 +1,53 @@
+site_name: Creaturebox Web Interface Documentation
+site_description: Documentation for the Creaturebox Web Interface
+site_author: Creaturebox Team
+
+theme:
+  name: material
+  palette:
+    primary: green
+    accent: deep purple
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.expand
+    - navigation.indexes
+    - content.code.annotate
+    - content.tabs.link
+  logo: assets/logo.svg
+  favicon: assets/favicon.png
+
+nav:
+  - Home: index.md
+  - Installation: installation/index.md
+  - User Guide:
+    - Getting Started: user-guide/getting-started.md
+    - Dashboard: user-guide/dashboard.md
+    - Photos: user-guide/photos.md
+    - Controls: user-guide/controls.md
+    - Settings: user-guide/settings.md
+  - Developer Guide:
+    - Architecture: developer-guide/architecture.md
+    - Setup: developer-guide/setup.md
+    - Extending: developer-guide/extending.md
+  - Troubleshooting: troubleshooting.md
+
+markdown_extensions:
+  - admonition
+  - codehilite
+  - footnotes
+  - toc:
+      permalink: true
+  - pymdownx.highlight
+  - pymdownx.superfences
+  - pymdownx.tabbed
+  - pymdownx.tasklist:
+      custom_checkbox: true
+
+extra:
+  version: 1.0.0
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/yourusername/creaturebox_web
+
+copyright: Copyright &copy; 2025 Creaturebox Team

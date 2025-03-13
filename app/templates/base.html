@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>{% block title %}{% if title %}{{ title }} - {% endif %}Creaturebox Web Interface{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/normalize.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    {% block styles %}{% endblock %}
+</head>
+<body class="dark-theme">
+    <div class="container">
+        <header class="main-header">
+            <div class="header-content">
+                <div class="logo">
+                    <a href="{{ url_for('main.index') }}">Creaturebox</a>
+                </div>
+                <nav class="main-nav">
+                    {% if session.authenticated %}
+                    <ul>
+                        <li><a href="{{ url_for('main.index') }}">Dashboard</a></li>
+                        <li><a href="#photo">Photos</a></li>
+                        <li><a href="#control">Controls</a></li>
+                        <li><a href="#settings">Settings</a></li>
+                        <li><a href="{{ url_for('auth.logout') }}">Logout</a></li>
+                    </ul>
+                    {% endif %}
+                </nav>
+                <div class="menu-toggle">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+        </header>
+
+        <div class="flash-messages">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="flash-message {{ category }}">
+                            <span class="message">{{ message }}</span>
+                            <button class="close">&times;</button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        </div>
+
+        <main class="main-content">
+            {% if title %}
+            <h1 class="page-title">{{ title }}</h1>
+            {% endif %}
+            
+            {% block content %}{% endblock %}
+        </main>
+
+        <footer class="main-footer">
+            <p>&copy; {{ now.year }} Creaturebox Web Interface</p>
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

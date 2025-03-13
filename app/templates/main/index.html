@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="dashboard">
+    <div class="dashboard-grid">
+        <div class="card system-info">
+            <h2>System Status</h2>
+            <div class="info-grid">
+                <div class="info-item">
+                    <span class="label">CPU</span>
+                    <span class="value">0%</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Memory</span>
+                    <span class="value">0 MB</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Disk</span>
+                    <span class="value">0 GB</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Temperature</span>
+                    <span class="value">0°C</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Uptime</span>
+                    <span class="value">0d 0h 0m</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">IP Address</span>
+                    <span class="value">0.0.0.0</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="card quick-actions">
+            <h2>Quick Actions</h2>
+            <div class="button-grid">
+                <button class="btn primary" disabled>Take Photo</button>
+                <button class="btn secondary" disabled>Toggle Light</button>
+                <button class="btn warning" disabled>Restart Service</button>
+                <button class="btn danger" disabled>Shutdown</button>
+            </div>
+        </div>
+
+        <div class="card recent-activity">
+            <h2>Recent Activity</h2>
+            <div class="activity-list">
+                <p class="empty-state">No recent activity</p>
+            </div>
+        </div>
+
+        <div class="card storage-status">
+            <h2>Storage Status</h2>
+            <div class="storage-meter">
+                <div class="meter">
+                    <div class="meter-bar" style="width: 0%;"></div>
+                </div>
+                <div class="meter-label">0% used (0 GB of 0 GB)</div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

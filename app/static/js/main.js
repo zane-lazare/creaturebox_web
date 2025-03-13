@@ -14,6 +14,22 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
   
+  // Handle dropdowns on mobile
+  const dropdowns = document.querySelectorAll('.dropdown');
+  
+  if (window.innerWidth <= 768) {
+    dropdowns.forEach(dropdown => {
+      const link = dropdown.querySelector('a');
+      link.addEventListener('click', function(e) {
+        e.preventDefault();
+        const menu = this.nextElementSibling;
+        if (menu) {
+          menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+        }
+      });
+    });
+  }
+  
   // Flash message close button
   const closeButtons = document.querySelectorAll('.flash-message .close');
   
@@ -33,9 +49,13 @@ document.addEventListener('DOMContentLoaded', function() {
     currentYearSpan.textContent = new Date().getFullYear();
   }
   
-  // Simulate data for dashboard in development mode
-  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-    simulateDashboardData();
+  // Simulate data for dashboard in development mode ONLY when not using real metrics
+  if ((window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && 
+      !window.location.pathname.includes('/system/')) {
+    // Only simulate data if we're not on a system page
+    if (!document.querySelector('script[data-real-metrics]')) {
+      simulateDashboardData();
+    }
   }
 });
 

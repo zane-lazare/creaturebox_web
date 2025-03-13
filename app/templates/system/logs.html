@@ -1,0 +1,524 @@
+{% extends "base.html" %}
+
+{% block styles %}
+<style>
+    .logs-container {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+    
+    .log-controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        align-items: flex-end;
+        padding: 1rem;
+        background-color: var(--color-card-bg);
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    .control-group {
+        display: flex;
+        flex-direction: column;
+        min-width: 150px;
+        flex-grow: 1;
+    }
+    
+    .control-group label {
+        margin-bottom: 0.5rem;
+        font-size: 0.9rem;
+        color: var(--color-text-secondary);
+    }
+    
+    .control-group select,
+    .control-group input {
+        padding: 0.5rem;
+        border-radius: 4px;
+        border: 1px solid var(--color-border);
+        background-color: var(--color-bg-secondary);
+        color: var(--color-text-primary);
+    }
+    
+    .log-files-card {
+        padding: 1rem;
+        background-color: var(--color-card-bg);
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    .log-files-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    
+    .log-files-table th,
+    .log-files-table td {
+        padding: 0.75rem;
+        text-align: left;
+        border-bottom: 1px solid var(--color-border);
+    }
+    
+    .log-files-table th {
+        color: var(--color-text-secondary);
+        font-weight: 500;
+    }
+    
+    .log-files-table tbody tr {
+        cursor: pointer;
+    }
+    
+    .log-files-table tbody tr:hover {
+        background-color: var(--color-bg-secondary);
+    }
+    
+    .log-files-table tbody tr.active {
+        background-color: var(--color-bg-highlight);
+    }
+    
+    .log-viewer {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        padding: 1rem;
+        background-color: var(--color-card-bg);
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    .log-viewer-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+    }
+    
+    .log-viewer-title {
+        margin: 0;
+        font-size: 1.2rem;
+    }
+    
+    .log-entries {
+        font-family: monospace;
+        font-size: 0.9rem;
+        line-height: 1.5;
+        white-space: pre-wrap;
+        word-break: break-all;
+        background-color: var(--color-bg-secondary);
+        color: var(--color-text-primary);
+        padding: 1rem;
+        border-radius: 4px;
+        max-height: 500px;
+        overflow-y: auto;
+    }
+    
+    .log-entry {
+        margin-bottom: 0.5rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid var(--color-border);
+    }
+    
+    .log-timestamp {
+        color: var(--color-text-secondary);
+        margin-right: 0.5rem;
+    }
+    
+    .log-level {
+        padding: 0.2rem 0.4rem;
+        border-radius: 3px;
+        margin-right: 0.5rem;
+        font-size: 0.8rem;
+    }
+    
+    .log-level-INFO {
+        background-color: var(--color-info);
+        color: white;
+    }
+    
+    .log-level-WARNING, .log-level-WARN {
+        background-color: var(--color-warning);
+        color: white;
+    }
+    
+    .log-level-ERROR, .log-level-CRITICAL, .log-level-FATAL {
+        background-color: var(--color-danger);
+        color: white;
+    }
+    
+    .log-level-DEBUG {
+        background-color: var(--color-secondary);
+        color: white;
+    }
+    
+    .log-source {
+        color: var(--color-accent);
+        font-style: italic;
+        margin-right: 0.5rem;
+    }
+    
+    .log-message {
+        color: var(--color-text-primary);
+    }
+    
+    .log-pagination {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+    
+    .page-info {
+        color: var(--color-text-secondary);
+    }
+    
+    .pagination-controls {
+        display: flex;
+        gap: 0.5rem;
+    }
+    
+    .pagination-controls button {
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        background-color: var(--color-bg-secondary);
+        border: 1px solid var(--color-border);
+        color: var(--color-text-primary);
+        cursor: pointer;
+    }
+    
+    .pagination-controls button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+    
+    .no-logs {
+        text-align: center;
+        padding: 2rem;
+        color: var(--color-text-secondary);
+    }
+    
+    .auto-refresh-container {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+    
+    .live-tail-toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    @media (max-width: 768px) {
+        .log-controls {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        
+        .control-group {
+            min-width: 0;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="logs-container">
+    <div class="log-controls">
+        <div class="control-group">
+            <label for="log-file">Log File</label>
+            <select id="log-file">
+                <option value="">Select a log file</option>
+                {% for log in log_files %}
+                <option value="{{ log.name }}">{{ log.name }} ({{ log.size_formatted }})</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="control-group">
+            <label for="severity-filter">Severity Level</label>
+            <select id="severity-filter">
+                <option value="">All Levels</option>
+                <option value="INFO">Info</option>
+                <option value="WARNING">Warning</option>
+                <option value="ERROR">Error</option>
+                <option value="DEBUG">Debug</option>
+            </select>
+        </div>
+        
+        <div class="control-group">
+            <label for="start-date">Start Date</label>
+            <input type="date" id="start-date">
+        </div>
+        
+        <div class="control-group">
+            <label for="end-date">End Date</label>
+            <input type="date" id="end-date">
+        </div>
+        
+        <div class="control-group">
+            <label for="search-filter">Search</label>
+            <input type="text" id="search-filter" placeholder="Search in logs...">
+        </div>
+        
+        <div class="control-group">
+            <button id="apply-filters" class="btn primary">Apply Filters</button>
+        </div>
+    </div>
+    
+    <div class="log-viewer">
+        <div class="log-viewer-header">
+            <h3 class="log-viewer-title" id="current-log-title">Log Viewer</h3>
+            <div class="auto-refresh-container">
+                <label class="live-tail-toggle">
+                    <input type="checkbox" id="live-tail-toggle"> Live Tail
+                </label>
+                <button id="download-log" class="btn secondary" disabled>Download</button>
+                <button id="refresh-log" class="btn secondary">Refresh</button>
+            </div>
+        </div>
+        
+        <div id="log-entries" class="log-entries">
+            <div class="no-logs">Select a log file to view entries</div>
+        </div>
+        
+        <div class="log-pagination">
+            <div class="page-info">
+                Showing <span id="entries-range">0-0</span> of <span id="total-entries">0</span> entries
+            </div>
+            <div class="pagination-controls">
+                <button id="prev-page" disabled>&laquo; Previous</button>
+                <span id="page-display">Page 1</span>
+                <button id="next-page" disabled>Next &raquo;</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // DOM elements
+        const logFileSelect = document.getElementById('log-file');
+        const severityFilter = document.getElementById('severity-filter');
+        const startDateInput = document.getElementById('start-date');
+        const endDateInput = document.getElementById('end-date');
+        const searchFilter = document.getElementById('search-filter');
+        const applyFiltersBtn = document.getElementById('apply-filters');
+        const logEntriesContainer = document.getElementById('log-entries');
+        const currentLogTitle = document.getElementById('current-log-title');
+        const downloadLogBtn = document.getElementById('download-log');
+        const refreshLogBtn = document.getElementById('refresh-log');
+        const liveTailToggle = document.getElementById('live-tail-toggle');
+        const prevPageBtn = document.getElementById('prev-page');
+        const nextPageBtn = document.getElementById('next-page');
+        const pageDisplay = document.getElementById('page-display');
+        const entriesRange = document.getElementById('entries-range');
+        const totalEntries = document.getElementById('total-entries');
+        
+        // State variables
+        let currentLogFile = '';
+        let currentPage = 1;
+        let totalPages = 1;
+        let perPage = 100;
+        let totalItems = 0;
+        let liveTailInterval = null;
+        
+        // Event listeners
+        logFileSelect.addEventListener('change', function() {
+            currentLogFile = this.value;
+            currentPage = 1;
+            
+            if (currentLogFile) {
+                currentLogTitle.textContent = `Log: ${currentLogFile}`;
+                downloadLogBtn.disabled = false;
+                fetchLogs();
+                
+                if (liveTailToggle.checked) {
+                    startLiveTail();
+                }
+            } else {
+                currentLogTitle.textContent = 'Log Viewer';
+                downloadLogBtn.disabled = true;
+                logEntriesContainer.innerHTML = '<div class="no-logs">Select a log file to view entries</div>';
+                stopLiveTail();
+            }
+        });
+        
+        applyFiltersBtn.addEventListener('click', function() {
+            if (currentLogFile) {
+                currentPage = 1;
+                fetchLogs();
+            }
+        });
+        
+        refreshLogBtn.addEventListener('click', function() {
+            if (currentLogFile) {
+                fetchLogs();
+            }
+        });
+        
+        downloadLogBtn.addEventListener('click', function() {
+            if (currentLogFile) {
+                window.location.href = `/system/api/logs/download?file=${encodeURIComponent(currentLogFile)}`;
+            }
+        });
+        
+        liveTailToggle.addEventListener('change', function() {
+            if (this.checked && currentLogFile) {
+                startLiveTail();
+            } else {
+                stopLiveTail();
+            }
+        });
+        
+        prevPageBtn.addEventListener('click', function() {
+            if (currentPage > 1) {
+                currentPage--;
+                fetchLogs();
+            }
+        });
+        
+        nextPageBtn.addEventListener('click', function() {
+            if (currentPage < totalPages) {
+                currentPage++;
+                fetchLogs();
+            }
+        });
+        
+        // Functions
+        function fetchLogs() {
+            // Build query parameters
+            const params = new URLSearchParams({
+                file: currentLogFile,
+                page: currentPage,
+                per_page: perPage
+            });
+            
+            if (severityFilter.value) {
+                params.append('severity', severityFilter.value);
+            }
+            
+            if (startDateInput.value) {
+                params.append('start_date', startDateInput.value);
+            }
+            
+            if (endDateInput.value) {
+                params.append('end_date', endDateInput.value);
+            }
+            
+            if (searchFilter.value) {
+                params.append('search', searchFilter.value);
+            }
+            
+            // Show loading state
+            logEntriesContainer.innerHTML = '<div class="no-logs">Loading logs...</div>';
+            
+            // Fetch logs from API
+            fetch(`/system/api/logs?${params.toString()}`)
+                .then(response => response.json())
+                .then(data => {
+                    // Update state
+                    totalItems = data.total;
+                    totalPages = data.pages;
+                    
+                    // Update pagination display
+                    updatePagination();
+                    
+                    // Render log entries
+                    renderLogEntries(data.logs);
+                })
+                .catch(error => {
+                    console.error('Error fetching logs:', error);
+                    logEntriesContainer.innerHTML = `<div class="no-logs">Error loading logs: ${error.message}</div>`;
+                });
+        }
+        
+        function renderLogEntries(logs) {
+            if (!logs || logs.length === 0) {
+                logEntriesContainer.innerHTML = '<div class="no-logs">No log entries found</div>';
+                return;
+            }
+            
+            // Clear container
+            logEntriesContainer.innerHTML = '';
+            
+            // Add each log entry
+            logs.forEach(log => {
+                const logEntry = document.createElement('div');
+                logEntry.className = 'log-entry';
+                
+                // Build entry content
+                let entryHTML = '';
+                
+                // Add timestamp if available
+                if (log.timestamp) {
+                    entryHTML += `<span class="log-timestamp">${log.timestamp}</span>`;
+                }
+                
+                // Add level badge if available
+                if (log.level) {
+                    entryHTML += `<span class="log-level log-level-${log.level}">${log.level}</span>`;
+                }
+                
+                // Add source if available
+                if (log.source) {
+                    entryHTML += `<span class="log-source">${log.source}</span>`;
+                }
+                
+                // Add message
+                entryHTML += `<span class="log-message">${log.message}</span>`;
+                
+                // Set HTML
+                logEntry.innerHTML = entryHTML;
+                
+                // Add to container
+                logEntriesContainer.appendChild(logEntry);
+            });
+            
+            // Scroll to bottom if in live tail mode
+            if (liveTailToggle.checked) {
+                logEntriesContainer.scrollTop = logEntriesContainer.scrollHeight;
+            }
+        }
+        
+        function updatePagination() {
+            // Update page display
+            pageDisplay.textContent = `Page ${currentPage} of ${totalPages}`;
+            
+            // Update entries range
+            const start = (currentPage - 1) * perPage + 1;
+            const end = Math.min(start + perPage - 1, totalItems);
+            entriesRange.textContent = totalItems > 0 ? `${start}-${end}` : '0-0';
+            totalEntries.textContent = totalItems;
+            
+            // Update button states
+            prevPageBtn.disabled = currentPage <= 1;
+            nextPageBtn.disabled = currentPage >= totalPages;
+        }
+        
+        function startLiveTail() {
+            stopLiveTail();
+            liveTailInterval = setInterval(() => {
+                if (currentLogFile) {
+                    // For live tail, always get the latest data
+                    currentPage = 1;
+                    fetchLogs();
+                }
+            }, 5000); // Refresh every 5 seconds
+        }
+        
+        function stopLiveTail() {
+            if (liveTailInterval) {
+                clearInterval(liveTailInterval);
+                liveTailInterval = null;
+            }
+        }
+        
+        // Initialize - disable live tail by default
+        liveTailToggle.checked = false;
+    });
+</script>
+{% endblock %}

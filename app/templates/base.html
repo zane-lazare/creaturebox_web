@@ -20,6 +20,14 @@
                     {% if session.authenticated %}
                     <ul>
                         <li><a href="{{ url_for('main.index') }}">Dashboard</a></li>
+                        <li class="dropdown">
+                            <a href="#">System</a>
+                            <ul class="dropdown-menu">
+                                <li><a href="{{ url_for('system.metrics') }}">Metrics</a></li>
+                                <li><a href="{{ url_for('system.logs') }}">Logs</a></li>
+                                <li><a href="{{ url_for('system.controls') }}">Controls</a></li>
+                            </ul>
+                        </li>
                         <li><a href="#photo">Photos</a></li>
                         <li><a href="#control">Controls</a></li>
                         <li><a href="#settings">Settings</a></li>

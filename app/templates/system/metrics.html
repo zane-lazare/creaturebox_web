@@ -1,0 +1,421 @@
+{% extends "base.html" %}
+
+{% block styles %}
+<style>
+    .metrics-dashboard {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        grid-gap: 1.5rem;
+    }
+    
+    .metric-card {
+        background-color: var(--color-card-bg);
+        border-radius: 8px;
+        padding: 1.25rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    .metric-card h3 {
+        margin-top: 0;
+        margin-bottom: 1rem;
+        font-size: 1.2rem;
+        color: var(--color-text-primary);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    
+    .metric-card .refresh-btn {
+        font-size: 0.9rem;
+        background: none;
+        border: none;
+        color: var(--color-accent);
+        cursor: pointer;
+    }
+    
+    .metric-value {
+        font-size: 2rem;
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+        color: var(--color-text-primary);
+    }
+    
+    .metric-label {
+        font-size: 0.9rem;
+        color: var(--color-text-secondary);
+    }
+    
+    .metric-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 0.75rem;
+        align-items: center;
+    }
+    
+    .metric-row:last-child {
+        margin-bottom: 0;
+    }
+    
+    .progress-bar {
+        width: 100%;
+        height: 8px;
+        background-color: var(--color-bg-secondary);
+        border-radius: 4px;
+        overflow: hidden;
+        margin-top: 0.5rem;
+    }
+    
+    .progress-value {
+        height: 100%;
+        border-radius: 4px;
+    }
+    
+    .progress-low {
+        background-color: var(--color-success);
+    }
+    
+    .progress-medium {
+        background-color: var(--color-warning);
+    }
+    
+    .progress-high {
+        background-color: var(--color-danger);
+    }
+    
+    .system-info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        grid-gap: 1rem;
+    }
+    
+    .info-item {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .info-label {
+        font-size: 0.8rem;
+        color: var(--color-text-secondary);
+        margin-bottom: 0.25rem;
+    }
+    
+    .info-value {
+        font-weight: 500;
+    }
+    
+    .auto-refresh {
+        margin: 1rem 0;
+        display: flex;
+        align-items: center;
+    }
+    
+    .refresh-interval {
+        margin-left: 0.5rem;
+        padding: 0.25rem;
+        border-radius: 4px;
+        border: 1px solid var(--color-border);
+        background-color: var(--color-bg-secondary);
+        color: var(--color-text-primary);
+    }
+    
+    @media (max-width: 768px) {
+        .metrics-dashboard {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="auto-refresh">
+    <label for="refresh-toggle">
+        <input type="checkbox" id="refresh-toggle" checked> Auto-refresh
+    </label>
+    <select id="refresh-interval" class="refresh-interval">
+        <option value="5000">5 seconds</option>
+        <option value="10000" selected>10 seconds</option>
+        <option value="30000">30 seconds</option>
+        <option value="60000">1 minute</option>
+    </select>
+    <button id="manual-refresh" class="btn secondary btn-sm">Refresh Now</button>
+</div>
+
+<div class="metrics-dashboard">
+    <!-- CPU Card -->
+    <div class="metric-card">
+        <h3>CPU Usage</h3>
+        <div class="metric-value" id="cpu-percent">0%</div>
+        <div class="progress-bar">
+            <div id="cpu-progress" class="progress-value progress-low" style="width: 0%;"></div>
+        </div>
+        <div class="metric-details">
+            <div class="metric-row">
+                <span class="metric-label">Cores</span>
+                <span id="cpu-cores">0</span>
+            </div>
+            <div class="metric-row">
+                <span class="metric-label">Load Average (1m)</span>
+                <span id="load-avg-1">0.00</span>
+            </div>
+            <div class="metric-row">
+                <span class="metric-label">Load Average (5m)</span>
+                <span id="load-avg-5">0.00</span>
+            </div>
+            <div class="metric-row">
+                <span class="metric-label">Load Average (15m)</span>
+                <span id="load-avg-15">0.00</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Memory Card -->
+    <div class="metric-card">
+        <h3>Memory</h3>
+        <div class="metric-value" id="memory-percent">0%</div>
+        <div class="progress-bar">
+            <div id="memory-progress" class="progress-value progress-low" style="width: 0%;"></div>
+        </div>
+        <div class="metric-details">
+            <div class="metric-row">
+                <span class="metric-label">Used</span>
+                <span id="memory-used">0 MB</span>
+            </div>
+            <div class="metric-row">
+                <span class="metric-label">Total</span>
+                <span id="memory-total">0 MB</span>
+            </div>
+            <div class="metric-row">
+                <span class="metric-label">Available</span>
+                <span id="memory-available">0 MB</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Disk Card -->
+    <div class="metric-card">
+        <h3>Disk Usage</h3>
+        <div class="metric-value" id="disk-percent">0%</div>
+        <div class="progress-bar">
+            <div id="disk-progress" class="progress-value progress-low" style="width: 0%;"></div>
+        </div>
+        <div class="metric-details">
+            <div class="metric-row">
+                <span class="metric-label">Used</span>
+                <span id="disk-used">0 GB</span>
+            </div>
+            <div class="metric-row">
+                <span class="metric-label">Total</span>
+                <span id="disk-total">0 GB</span>
+            </div>
+            <div class="metric-row">
+                <span class="metric-label">Free</span>
+                <span id="disk-free">0 GB</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Temperature Card -->
+    <div class="metric-card">
+        <h3>Temperature</h3>
+        <div class="metric-value" id="temperature">0°C</div>
+        <div class="progress-bar">
+            <div id="temperature-progress" class="progress-value progress-low" style="width: 0%;"></div>
+        </div>
+        <div class="metric-details">
+            <div class="metric-row">
+                <span class="metric-label">Critical</span>
+                <span>80°C</span>
+            </div>
+            <div class="metric-row">
+                <span class="metric-label">Warning</span>
+                <span>70°C</span>
+            </div>
+            <div class="metric-row">
+                <span class="metric-label">Normal</span>
+                <span>&lt; 60°C</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Network Card -->
+    <div class="metric-card">
+        <h3>Network</h3>
+        <div class="metric-details">
+            <div class="metric-row">
+                <span class="metric-label">IP Address</span>
+                <span id="ip-address">-</span>
+            </div>
+            <div class="metric-row">
+                <span class="metric-label">Received</span>
+                <span id="net-recv">0 MB</span>
+            </div>
+            <div class="metric-row">
+                <span class="metric-label">Sent</span>
+                <span id="net-sent">0 MB</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Info Card -->
+    <div class="metric-card">
+        <h3>System Information</h3>
+        <div class="metric-details">
+            <div class="metric-row">
+                <span class="metric-label">Hostname</span>
+                <span id="hostname">-</span>
+            </div>
+            <div class="metric-row">
+                <span class="metric-label">Uptime</span>
+                <span id="uptime">0d 0h 0m</span>
+            </div>
+            <div class="metric-row">
+                <span class="metric-label">Model</span>
+                <span id="pi-model">-</span>
+            </div>
+            <div class="metric-row">
+                <span class="metric-label">Platform</span>
+                <span id="platform">-</span>
+            </div>
+            <div class="metric-row">
+                <span class="metric-label">Current Time</span>
+                <span id="current-time">-</span>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const refreshToggle = document.getElementById('refresh-toggle');
+        const refreshInterval = document.getElementById('refresh-interval');
+        const manualRefresh = document.getElementById('manual-refresh');
+        
+        let intervalId = null;
+        
+        // Set up initial refresh interval
+        startAutoRefresh();
+        
+        // Initial data load
+        fetchMetrics();
+        
+        // Toggle auto-refresh
+        refreshToggle.addEventListener('change', function() {
+            if (this.checked) {
+                startAutoRefresh();
+            } else {
+                stopAutoRefresh();
+            }
+        });
+        
+        // Change refresh interval
+        refreshInterval.addEventListener('change', function() {
+            if (refreshToggle.checked) {
+                stopAutoRefresh();
+                startAutoRefresh();
+            }
+        });
+        
+        // Manual refresh button
+        manualRefresh.addEventListener('click', fetchMetrics);
+        
+        function startAutoRefresh() {
+            const interval = parseInt(refreshInterval.value);
+            stopAutoRefresh();
+            intervalId = setInterval(fetchMetrics, interval);
+        }
+        
+        function stopAutoRefresh() {
+            if (intervalId) {
+                clearInterval(intervalId);
+                intervalId = null;
+            }
+        }
+        
+        function fetchMetrics() {
+            fetch('/system/api/metrics')
+                .then(response => response.json())
+                .then(updateMetrics)
+                .catch(error => console.error('Error fetching metrics:', error));
+        }
+        
+        function updateMetrics(data) {
+            // CPU
+            document.getElementById('cpu-percent').textContent = `${data.cpu.percent.toFixed(1)}%`;
+            document.getElementById('cpu-cores').textContent = data.cpu.cores;
+            document.getElementById('load-avg-1').textContent = data.cpu.load_avg_1min.toFixed(2);
+            document.getElementById('load-avg-5').textContent = data.cpu.load_avg_5min.toFixed(2);
+            document.getElementById('load-avg-15').textContent = data.cpu.load_avg_15min.toFixed(2);
+            
+            const cpuProgress = document.getElementById('cpu-progress');
+            cpuProgress.style.width = `${data.cpu.percent}%`;
+            updateProgressClass(cpuProgress, data.cpu.percent);
+            
+            // Memory
+            document.getElementById('memory-percent').textContent = `${data.memory.percent.toFixed(1)}%`;
+            document.getElementById('memory-used').textContent = data.memory.used_formatted;
+            document.getElementById('memory-total').textContent = data.memory.total_formatted;
+            document.getElementById('memory-available').textContent = data.memory.available_formatted;
+            
+            const memoryProgress = document.getElementById('memory-progress');
+            memoryProgress.style.width = `${data.memory.percent}%`;
+            updateProgressClass(memoryProgress, data.memory.percent);
+            
+            // Disk
+            document.getElementById('disk-percent').textContent = `${data.disk.percent.toFixed(1)}%`;
+            document.getElementById('disk-used').textContent = data.disk.used_formatted;
+            document.getElementById('disk-total').textContent = data.disk.total_formatted;
+            document.getElementById('disk-free').textContent = data.disk.free_formatted;
+            
+            const diskProgress = document.getElementById('disk-progress');
+            diskProgress.style.width = `${data.disk.percent}%`;
+            updateProgressClass(diskProgress, data.disk.percent);
+            
+            // Temperature
+            if (data.temperature !== null) {
+                document.getElementById('temperature').textContent = `${data.temperature.toFixed(1)}°C`;
+                
+                const tempProgress = document.getElementById('temperature-progress');
+                const tempPercent = (data.temperature / 80) * 100; // Max at 80°C
+                tempProgress.style.width = `${Math.min(tempPercent, 100)}%`;
+                
+                // Temperature thresholds
+                if (data.temperature > 70) {
+                    updateProgressClass(tempProgress, 90); // High
+                } else if (data.temperature > 60) {
+                    updateProgressClass(tempProgress, 70); // Medium
+                } else {
+                    updateProgressClass(tempProgress, 30); // Low
+                }
+            } else {
+                document.getElementById('temperature').textContent = 'N/A';
+            }
+            
+            // Network
+            document.getElementById('ip-address').textContent = data.system.ip_address;
+            document.getElementById('net-recv').textContent = data.network.bytes_recv_formatted;
+            document.getElementById('net-sent').textContent = data.network.bytes_sent_formatted;
+            
+            // System Info
+            document.getElementById('hostname').textContent = data.system.hostname;
+            document.getElementById('uptime').textContent = data.uptime_formatted;
+            document.getElementById('pi-model').textContent = data.system.pi_model;
+            document.getElementById('platform').textContent = data.system.platform;
+            document.getElementById('current-time').textContent = data.system.time;
+        }
+        
+        function updateProgressClass(element, value) {
+            element.classList.remove('progress-low', 'progress-medium', 'progress-high');
+            
+            if (value < 60) {
+                element.classList.add('progress-low');
+            } else if (value < 85) {
+                element.classList.add('progress-medium');
+            } else {
+                element.classList.add('progress-high');
+            }
+        }
+    });
+</script>
+{% endblock %}

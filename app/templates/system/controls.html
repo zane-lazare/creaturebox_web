@@ -1,0 +1,479 @@
+{% extends "base.html" %}
+
+{% block styles %}
+<style>
+    .controls-container {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+    
+    .control-section {
+        background-color: var(--color-card-bg);
+        border-radius: 8px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    .control-section h3 {
+        margin-top: 0;
+        margin-bottom: 1rem;
+        color: var(--color-text-primary);
+        font-size: 1.2rem;
+        border-bottom: 1px solid var(--color-border);
+        padding-bottom: 0.5rem;
+    }
+    
+    .control-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 1rem;
+    }
+    
+    .control-card {
+        background-color: var(--color-bg-secondary);
+        border-radius: 6px;
+        padding: 1rem;
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: space-between;
+        height: 100%;
+        min-height: 150px;
+    }
+    
+    .control-icon {
+        width: 40px;
+        height: 40px;
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+    }
+    
+    .control-name {
+        font-weight: 500;
+        margin-bottom: 1rem;
+    }
+    
+    .control-description {
+        font-size: 0.9rem;
+        color: var(--color-text-secondary);
+        margin-bottom: 1rem;
+        flex-grow: 1;
+    }
+    
+    .confirmation-dialog {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s ease;
+    }
+    
+    .confirmation-dialog.active {
+        opacity: 1;
+        pointer-events: auto;
+    }
+    
+    .dialog-content {
+        background-color: var(--color-card-bg);
+        border-radius: 8px;
+        padding: 1.5rem;
+        max-width: 400px;
+        width: 90%;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    }
+    
+    .dialog-title {
+        font-size: 1.2rem;
+        margin-top: 0;
+        margin-bottom: 1rem;
+        color: var(--color-text-primary);
+    }
+    
+    .dialog-message {
+        margin-bottom: 1.5rem;
+        color: var(--color-text-secondary);
+    }
+    
+    .dialog-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 1rem;
+    }
+    
+    .status-indicator {
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        margin-right: 0.5rem;
+    }
+    
+    .status-active {
+        background-color: var(--color-success);
+    }
+    
+    .status-inactive {
+        background-color: var(--color-danger);
+    }
+    
+    .status-warning {
+        background-color: var(--color-warning);
+    }
+    
+    .status-unknown {
+        background-color: var(--color-secondary);
+    }
+    
+    .status-label {
+        font-size: 0.8rem;
+        color: var(--color-text-secondary);
+    }
+    
+    .service-status {
+        display: flex;
+        align-items: center;
+        margin-bottom: 0.5rem;
+    }
+    
+    .status-message {
+        font-size: 0.9rem;
+        color: var(--color-text-secondary);
+        margin-top: 1rem;
+        padding: 0.5rem;
+        border-radius: 4px;
+        background-color: var(--color-bg-secondary);
+        display: none;
+    }
+    
+    .status-message.visible {
+        display: block;
+    }
+    
+    .status-message.success {
+        color: var(--color-success);
+    }
+    
+    .status-message.error {
+        color: var(--color-danger);
+    }
+    
+    @media (max-width: 768px) {
+        .control-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="controls-container">
+    <div class="control-section">
+        <h3>Service Controls</h3>
+        <div class="service-status">
+            <span class="status-indicator status-unknown" id="creaturebox-status"></span>
+            <span class="status-label">Creaturebox Service: <span id="creaturebox-status-text">Unknown</span></span>
+        </div>
+        <div class="service-status">
+            <span class="status-indicator status-unknown" id="nginx-status"></span>
+            <span class="status-label">Web Server: <span id="nginx-status-text">Unknown</span></span>
+        </div>
+        
+        <div class="status-message" id="service-status-message"></div>
+        
+        <div class="control-grid">
+            <div class="control-card">
+                <div class="control-icon">🔄</div>
+                <div class="control-name">Restart Creaturebox</div>
+                <div class="control-description">Restart the Creaturebox service</div>
+                <button class="btn warning" data-action="restart-service" data-service="creaturebox">Restart</button>
+            </div>
+            
+            <div class="control-card">
+                <div class="control-icon">🌐</div>
+                <div class="control-name">Restart Web Server</div>
+                <div class="control-description">Restart the Nginx web server</div>
+                <button class="btn warning" data-action="restart-service" data-service="nginx">Restart</button>
+            </div>
+            
+            <div class="control-card">
+                <div class="control-icon">📱</div>
+                <div class="control-name">Restart Web Interface</div>
+                <div class="control-description">Restart the Creaturebox Web Interface</div>
+                <button class="btn warning" data-action="restart-service" data-service="creaturebox_web">Restart</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="control-section">
+        <h3>System Controls</h3>
+        <div class="status-message" id="system-status-message"></div>
+        
+        <div class="control-grid">
+            <div class="control-card">
+                <div class="control-icon">🔄</div>
+                <div class="control-name">Reboot System</div>
+                <div class="control-description">Safely reboot the Raspberry Pi</div>
+                <button class="btn warning" data-action="reboot">Reboot</button>
+            </div>
+            
+            <div class="control-card">
+                <div class="control-icon">⏻</div>
+                <div class="control-name">Shutdown</div>
+                <div class="control-description">Safely power off the Raspberry Pi</div>
+                <button class="btn danger" data-action="shutdown">Shutdown</button>
+            </div>
+            
+            <div class="control-card">
+                <div class="control-icon">✖️</div>
+                <div class="control-name">Cancel Shutdown</div>
+                <div class="control-description">Cancel a pending shutdown or reboot</div>
+                <button class="btn secondary" data-action="cancel-shutdown">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Confirmation Dialog -->
+<div class="confirmation-dialog" id="confirmation-dialog">
+    <div class="dialog-content">
+        <h3 class="dialog-title" id="dialog-title">Confirm Action</h3>
+        <p class="dialog-message" id="dialog-message">Are you sure you want to perform this action?</p>
+        <div class="dialog-actions">
+            <button class="btn secondary" id="dialog-cancel">Cancel</button>
+            <button class="btn primary" id="dialog-confirm">Confirm</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // DOM elements
+        const actionButtons = document.querySelectorAll('[data-action]');
+        const confirmDialog = document.getElementById('confirmation-dialog');
+        const dialogTitle = document.getElementById('dialog-title');
+        const dialogMessage = document.getElementById('dialog-message');
+        const dialogConfirm = document.getElementById('dialog-confirm');
+        const dialogCancel = document.getElementById('dialog-cancel');
+        const serviceStatusMessage = document.getElementById('service-status-message');
+        const systemStatusMessage = document.getElementById('system-status-message');
+        
+        // Current pending action
+        let pendingAction = null;
+        let pendingService = null;
+        
+        // Check service status on page load
+        checkServiceStatus('creaturebox');
+        checkServiceStatus('nginx');
+        
+        // Attach event listeners to action buttons
+        actionButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const action = this.dataset.action;
+                const service = this.dataset.service || null;
+                
+                // Set pending action
+                pendingAction = action;
+                pendingService = service;
+                
+                // Configure dialog based on action
+                switch(action) {
+                    case 'restart-service':
+                        dialogTitle.textContent = `Restart ${service}`;
+                        dialogMessage.textContent = `Are you sure you want to restart the ${service} service? This may cause temporary disruption.`;
+                        break;
+                    case 'reboot':
+                        dialogTitle.textContent = 'Reboot System';
+                        dialogMessage.textContent = 'Are you sure you want to reboot the Raspberry Pi? The system will be unavailable for a few minutes.';
+                        break;
+                    case 'shutdown':
+                        dialogTitle.textContent = 'Shutdown System';
+                        dialogMessage.textContent = 'Are you sure you want to shutdown the Raspberry Pi? You will need to manually power it back on.';
+                        break;
+                    case 'cancel-shutdown':
+                        dialogTitle.textContent = 'Cancel Shutdown';
+                        dialogMessage.textContent = 'Are you sure you want to cancel any pending shutdown or reboot?';
+                        break;
+                }
+                
+                // Show dialog
+                confirmDialog.classList.add('active');
+            });
+        });
+        
+        // Dialog cancel button
+        dialogCancel.addEventListener('click', function() {
+            confirmDialog.classList.remove('active');
+            pendingAction = null;
+            pendingService = null;
+        });
+        
+        // Dialog backdrop click to cancel
+        confirmDialog.addEventListener('click', function(e) {
+            if (e.target === confirmDialog) {
+                confirmDialog.classList.remove('active');
+                pendingAction = null;
+                pendingService = null;
+            }
+        });
+        
+        // Dialog confirm button
+        dialogConfirm.addEventListener('click', function() {
+            // Close dialog
+            confirmDialog.classList.remove('active');
+            
+            // Execute action
+            executeAction(pendingAction, pendingService);
+            
+            // Reset pending action
+            pendingAction = null;
+            pendingService = null;
+        });
+        
+        // Execute the confirmed action
+        function executeAction(action, service) {
+            let endpoint = '';
+            let requestData = {};
+            let statusElement = null;
+            
+            switch(action) {
+                case 'restart-service':
+                    endpoint = '/system/api/controls/restart-service';
+                    requestData = { service: service };
+                    statusElement = serviceStatusMessage;
+                    break;
+                case 'reboot':
+                    endpoint = '/system/api/controls/reboot';
+                    statusElement = systemStatusMessage;
+                    break;
+                case 'shutdown':
+                    endpoint = '/system/api/controls/shutdown';
+                    statusElement = systemStatusMessage;
+                    break;
+                case 'cancel-shutdown':
+                    endpoint = '/system/api/controls/cancel-shutdown';
+                    statusElement = systemStatusMessage;
+                    break;
+                default:
+                    return;
+            }
+            
+            // Show loading message
+            statusElement.textContent = 'Executing command...';
+            statusElement.className = 'status-message visible';
+            
+            // Execute API call
+            fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCsrfToken()
+                },
+                body: JSON.stringify(requestData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    statusElement.textContent = data.message;
+                    statusElement.className = 'status-message visible success';
+                    
+                    // If restarting a service, check its status after a delay
+                    if (action === 'restart-service') {
+                        setTimeout(() => {
+                            checkServiceStatus(service);
+                        }, 5000); // Check after 5 seconds
+                    }
+                } else {
+                    statusElement.textContent = data.message || 'An error occurred';
+                    statusElement.className = 'status-message visible error';
+                }
+                
+                // Hide message after a delay
+                setTimeout(() => {
+                    statusElement.className = 'status-message';
+                }, 10000); // Hide after 10 seconds
+            })
+            .catch(error => {
+                console.error('Error executing action:', error);
+                statusElement.textContent = 'Error: Could not execute command';
+                statusElement.className = 'status-message visible error';
+                
+                // Hide message after a delay
+                setTimeout(() => {
+                    statusElement.className = 'status-message';
+                }, 10000); // Hide after 10 seconds
+            });
+        }
+        
+        // Check service status
+        function checkServiceStatus(service) {
+            const statusIndicator = document.getElementById(`${service}-status`);
+            const statusText = document.getElementById(`${service}-status-text`);
+            
+            if (!statusIndicator || !statusText) {
+                return;
+            }
+            
+            // Reset to unknown
+            statusIndicator.className = 'status-indicator status-unknown';
+            statusText.textContent = 'Checking...';
+            
+            // Simple check using systemctl is-active
+            fetch(`/system/api/controls/service-status?service=${service}`, {
+                headers: {
+                    'X-CSRFToken': getCsrfToken()
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    if (data.active) {
+                        statusIndicator.className = 'status-indicator status-active';
+                        statusText.textContent = 'Active';
+                    } else {
+                        statusIndicator.className = 'status-indicator status-inactive';
+                        statusText.textContent = 'Inactive';
+                    }
+                } else {
+                    statusIndicator.className = 'status-indicator status-warning';
+                    statusText.textContent = 'Error checking status';
+                }
+            })
+            .catch(error => {
+                console.error('Error checking service status:', error);
+                statusIndicator.className = 'status-indicator status-warning';
+                statusText.textContent = 'Error checking status';
+            });
+        }
+        
+        // Get CSRF token from cookie
+        function getCsrfToken() {
+            const name = 'csrf_token=';
+            const decodedCookie = decodeURIComponent(document.cookie);
+            const cookieArray = decodedCookie.split(';');
+            
+            for (let i = 0; i < cookieArray.length; i++) {
+                let cookie = cookieArray[i].trim();
+                if (cookie.indexOf(name) === 0) {
+                    return cookie.substring(name.length, cookie.length);
+                }
+            }
+            return '';
+        }
+    });
+</script>
+{% endblock %}

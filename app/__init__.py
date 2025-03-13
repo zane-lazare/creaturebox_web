@@ -55,6 +55,9 @@ def create_app(test_config=None):
     from app.main import bp as main_bp
     app.register_blueprint(main_bp)
     
+    from app.system import bp as system_bp
+    app.register_blueprint(system_bp, url_prefix='/system')
+    
     # Set up logging
     if not app.debug:
         if not os.path.exists('logs'):

@@ -36,10 +36,10 @@
         <div class="card quick-actions">
             <h2>Quick Actions</h2>
             <div class="button-grid">
-                <button class="btn primary" disabled>Take Photo</button>
-                <button class="btn secondary" disabled>Toggle Light</button>
-                <button class="btn warning" disabled>Restart Service</button>
-                <button class="btn danger" disabled>Shutdown</button>
+                <a href="#photo" class="btn primary">Take Photo</a>
+                <a href="#control" class="btn secondary">Toggle Light</a>
+                <a href="{{ url_for('system.controls') }}" class="btn warning">System Controls</a>
+                <button id="shutdown-btn" class="btn danger">Shutdown</button>
             </div>
         </div>
 
@@ -61,4 +61,147 @@
         </div>
     </div>
 </section>
+
+<!-- Confirmation Dialog -->
+<div class="confirmation-dialog" id="confirmation-dialog" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.5); z-index: 1000;">
+    <div style="background-color: var(--card-background); padding: 1.5rem; border-radius: 8px; max-width: 400px; margin: 10% auto; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);">
+        <h3 id="dialog-title" style="margin-top: 0;">Confirm Shutdown</h3>
+        <p id="dialog-message" style="margin-bottom: 1.5rem;">Are you sure you want to shutdown the system? You will need to manually power it back on.</p>
+        <div style="display: flex; justify-content: flex-end; gap: 1rem;">
+            <button id="dialog-cancel" class="btn secondary">Cancel</button>
+            <button id="dialog-confirm" class="btn danger">Confirm</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script data-real-metrics="true">
+    document.addEventListener('DOMContentLoaded', function() {
+        // Fetch system metrics on load
+        fetchSystemMetrics();
+        
+        // Set up auto-refresh
+        setInterval(fetchSystemMetrics, 10000); // Refresh every 10 seconds
+        
+        function fetchSystemMetrics() {
+            fetch('/system/api/metrics')
+                .then(response => response.json())
+                .then(data => updateDashboardMetrics(data))
+                .catch(error => console.error('Error fetching system metrics:', error));
+        }
+        
+        function updateDashboardMetrics(data) {
+            // Update system info
+            updateSystemInfo('CPU', data.cpu.percent.toFixed(1) + '%');
+            updateSystemInfo('Memory', data.memory.used_formatted);
+            updateSystemInfo('Disk', data.disk.used_formatted);
+            
+            if (data.temperature !== null) {
+                updateSystemInfo('Temperature', data.temperature.toFixed(1) + '°C');
+            } else {
+                updateSystemInfo('Temperature', 'N/A');
+            }
+            
+            updateSystemInfo('Uptime', data.uptime_formatted);
+            updateSystemInfo('IP Address', data.system.ip_address);
+            
+            // Update storage meter
+            const meterBar = document.querySelector('.meter-bar');
+            const meterLabel = document.querySelector('.meter-label');
+            
+            if (meterBar) {
+                meterBar.style.width = data.disk.percent + '%';
+            }
+            
+            if (meterLabel) {
+                meterLabel.textContent = data.disk.percent.toFixed(1) + '% used (' + 
+                    data.disk.used_formatted + ' of ' + data.disk.total_formatted + ')';
+            }
+        }
+        
+        /**
+         * Update system info value in dashboard
+         */
+        function updateSystemInfo(label, value) {
+            const elements = document.querySelectorAll('.info-item');
+            
+            elements.forEach(element => {
+                const labelElement = element.querySelector('.label');
+                if (labelElement && labelElement.textContent === label) {
+                    const valueElement = element.querySelector('.value');
+                    if (valueElement) {
+                        valueElement.textContent = value;
+                    }
+                }
+            });
+        }
+        
+        // Add shutdown confirmation dialog
+        const shutdownBtn = document.getElementById('shutdown-btn');
+        const confirmDialog = document.getElementById('confirmation-dialog');
+        const dialogCancel = document.getElementById('dialog-cancel');
+        const dialogConfirm = document.getElementById('dialog-confirm');
+        
+        if (shutdownBtn && confirmDialog) {
+            shutdownBtn.addEventListener('click', function() {
+                confirmDialog.style.display = 'block';
+            });
+            
+            dialogCancel.addEventListener('click', function() {
+                confirmDialog.style.display = 'none';
+            });
+            
+            dialogConfirm.addEventListener('click', function() {
+                confirmDialog.style.display = 'none';
+                
+                // Show a message that we're shutting down
+                const statusMessage = document.createElement('div');
+                statusMessage.className = 'flash-message info';
+                statusMessage.innerHTML = '<span class="message">Initiating system shutdown...</span>';
+                document.querySelector('.flash-messages').appendChild(statusMessage);
+                
+                // Call the shutdown API
+                fetch('/system/api/controls/shutdown', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCsrfToken()
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    statusMessage.innerHTML = `<span class="message">${data.message}</span>`;
+                })
+                .catch(error => {
+                    console.error('Error shutting down:', error);
+                    statusMessage.className = 'flash-message error';
+                    statusMessage.innerHTML = '<span class="message">Error initiating shutdown</span>';
+                });
+            });
+            
+            // Close dialog when clicking outside
+            confirmDialog.addEventListener('click', function(e) {
+                if (e.target === confirmDialog) {
+                    confirmDialog.style.display = 'none';
+                }
+            });
+        }
+        
+        // Get CSRF token
+        function getCsrfToken() {
+            const name = 'csrf_token=';
+            const decodedCookie = decodeURIComponent(document.cookie);
+            const cookieArray = decodedCookie.split(';');
+            
+            for (let i = 0; i < cookieArray.length; i++) {
+                let cookie = cookieArray[i].trim();
+                if (cookie.indexOf(name) === 0) {
+                    return cookie.substring(name.length, cookie.length);
+                }
+            }
+            return '';
+        }
+    });
+</script>
 {% endblock %}

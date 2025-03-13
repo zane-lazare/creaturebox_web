@@ -85,10 +85,20 @@
         setInterval(fetchSystemMetrics, 10000); // Refresh every 10 seconds
         
         function fetchSystemMetrics() {
-            fetch('/system/api/metrics')
-                .then(response => response.json())
-                .then(data => updateDashboardMetrics(data))
-                .catch(error => console.error('Error fetching system metrics:', error));
+            fetch('/system/api/metrics', {
+                credentials: 'same-origin',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok: ' + response.statusText);
+                }
+                return response.json();
+            })
+            .then(data => updateDashboardMetrics(data))
+            .catch(error => console.error('Error fetching system metrics:', error));
         }
         
         function updateDashboardMetrics(data) {

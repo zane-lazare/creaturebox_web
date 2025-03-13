@@ -4,7 +4,7 @@ System routes for the Creaturebox Web Interface.
 These routes handle system monitoring, log viewing, and system controls.
 """
 
-from flask import render_template, jsonify, current_app, request, send_file, abort
+from flask import render_template, jsonify, current_app, request, send_file, abort, session
 import os
 import psutil
 import platform
@@ -32,6 +32,16 @@ def metrics():
 @login_required
 def api_metrics():
     """Return JSON with current system metrics."""
+    # Check if this is an AJAX request
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+    
+    # If not AJAX and not authenticated, return JSON error instead of redirect
+    if not is_ajax and 'authenticated' not in session:
+        return jsonify({
+            'success': False,
+            'message': 'Authentication required'
+        }), 401
+        
     metrics = get_system_metrics()
     return jsonify(metrics)
 

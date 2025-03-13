@@ -70,6 +70,10 @@ cd "$INSTALL_DIR"
 source venv/bin/activate
 pip install -r requirements.txt
 
+# Add execute permissions to update script
+echo "Adding execute permissions to update script..."
+sudo chmod +x "$REPO_DIR/scripts/update_deployment.sh"
+
 # Restart service
 echo -e "${GREEN}Restarting service...${NC}"
 sudo systemctl restart "$SERVICE_NAME"

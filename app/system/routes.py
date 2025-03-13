@@ -11,6 +11,7 @@ import platform
 import json
 import datetime
 import subprocess
+import shutil
 from pathlib import Path
 import io
 import re
@@ -21,6 +22,15 @@ from app.system.utils import (
     get_temperature, get_uptime,
     get_logs, filter_logs, get_log_file_list
 )
+
+@bp.route('/api/test')
+def api_test():
+    """Simple test endpoint to verify system module is accessible."""
+    return jsonify({
+        'success': True,
+        'message': 'System module API is functioning correctly',
+        'timestamp': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    })
 
 @bp.route('/metrics')
 @login_required
@@ -116,9 +126,17 @@ def restart_service():
         return jsonify({'success': False, 'message': 'Invalid service'}), 400
     
     try:
+        # Find the path to systemctl
+        systemctl_path = shutil.which('systemctl')
+        if not systemctl_path:
+            return jsonify({
+                'success': False,
+                'message': 'systemctl command not found'
+            }), 500
+        
         # Using subprocess with explicit arguments for security
         result = subprocess.run(
-            ['sudo', 'systemctl', 'restart', service],
+            [systemctl_path, 'restart', service],
             capture_output=True, text=True, timeout=10, check=True
         )
         return jsonify({
@@ -143,9 +161,17 @@ def restart_service():
 def reboot_system():
     """Reboot the system."""
     try:
+        # Find the path to shutdown command
+        shutdown_path = shutil.which('shutdown')
+        if not shutdown_path:
+            return jsonify({
+                'success': False,
+                'message': 'shutdown command not found'
+            }), 500
+            
         # Schedule a reboot in 1 minute to allow the response to be sent
         subprocess.run(
-            ['sudo', 'shutdown', '-r', '+1', '"Reboot requested from web interface"'],
+            [shutdown_path, '-r', '+1', 'Reboot requested from web interface'],
             capture_output=True, text=True, check=True
         )
         return jsonify({
@@ -164,9 +190,17 @@ def reboot_system():
 def shutdown_system():
     """Shutdown the system."""
     try:
+        # Find the path to shutdown command
+        shutdown_path = shutil.which('shutdown')
+        if not shutdown_path:
+            return jsonify({
+                'success': False,
+                'message': 'shutdown command not found'
+            }), 500
+            
         # Schedule a shutdown in 1 minute to allow the response to be sent
         subprocess.run(
-            ['sudo', 'shutdown', '+1', '"Shutdown requested from web interface"'],
+            [shutdown_path, '+1', 'Shutdown requested from web interface'],
             capture_output=True, text=True, check=True
         )
         return jsonify({
@@ -185,8 +219,16 @@ def shutdown_system():
 def cancel_shutdown():
     """Cancel a pending shutdown or reboot."""
     try:
+        # Find the path to shutdown command
+        shutdown_path = shutil.which('shutdown')
+        if not shutdown_path:
+            return jsonify({
+                'success': False,
+                'message': 'shutdown command not found'
+            }), 500
+            
         subprocess.run(
-            ['sudo', 'shutdown', '-c'],
+            [shutdown_path, '-c'],
             capture_output=True, text=True, check=True
         )
         return jsonify({
@@ -211,9 +253,17 @@ def service_status():
         return jsonify({'success': False, 'message': 'Invalid service'}), 400
     
     try:
+        # Find the path to systemctl
+        systemctl_path = shutil.which('systemctl')
+        if not systemctl_path:
+            return jsonify({
+                'success': False,
+                'message': 'systemctl command not found'
+            }), 500
+            
         # Using subprocess with explicit arguments for security
         result = subprocess.run(
-            ['systemctl', 'is-active', service],
+            [systemctl_path, 'is-active', service],
             capture_output=True, text=True, timeout=5
         )
         return jsonify({

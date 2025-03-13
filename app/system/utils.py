@@ -35,13 +35,21 @@ def get_system_metrics():
     # Try to get IP address
     ip_address = "Unknown"
     try:
-        # This is a simple approach and might not work in all network configurations
-        ip_cmd = subprocess.run(
-            ['hostname', '-I'], 
-            capture_output=True, text=True, check=True
-        )
-        ip_address = ip_cmd.stdout.strip().split()[0]
-    except (subprocess.SubprocessError, IndexError):
+        # Use network interfaces to get IP address instead of hostname command
+        network_if_addrs = psutil.net_if_addrs()
+        for interface_name, interface_addresses in network_if_addrs.items():
+            # Skip loopback interfaces
+            if interface_name.startswith('lo'):
+                continue
+            # Look for IPv4 addresses
+            for address in interface_addresses:
+                if address.family == 2:  # AF_INET (IPv4)
+                    ip_address = address.address
+                    break
+            if ip_address != "Unknown":
+                break
+    except Exception as e:
+        current_app.logger.warning(f"Error getting IP address: {str(e)}")
         pass
     
     # Get Raspberry Pi model

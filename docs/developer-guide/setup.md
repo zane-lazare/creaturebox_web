@@ -129,13 +129,14 @@ To add a new module (e.g., a Photo module):
 3. Create templates in `app/templates/photo/`
 4. Register the blueprint in `app/__init__.py`
 
-### Modifying the Database Schema
+### Working with Templates
 
-If your module needs database storage:
+When working with templates, keep these in mind:
 
-1. Define models in a `models.py` file in your blueprint
-2. Use Flask-SQLAlchemy for ORM
-3. Create migrations using Flask-Migrate
+1. All templates extend from `base.html`
+2. Common variables like `now` are available in all templates
+3. Use blocks for defining content sections
+4. Keep JavaScript and CSS organized and modular
 
 ### Working with the Existing Creaturebox Code
 

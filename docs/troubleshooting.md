@@ -22,7 +22,7 @@ This guide provides solutions to common issues you might encounter with the Crea
 **Possible Causes and Solutions**:
 
 - **Check the status**: Run `sudo systemctl status creaturebox-web`.
-- **Check logs**: Run `sudo journalctl -u creaturebox-web` to see error messages.
+- **Check logs**: Run `sudo journalctl -u creaturebox-web -n 50` to see the most recent error messages.
 - **Path issues**: Ensure the paths in the service file are correct.
 - **Permission problems**: Check file and directory permissions.
 
@@ -188,6 +188,19 @@ This guide provides solutions to common issues you might encounter with the Crea
 - Ensure log rotation is set up properly.
 - Check disk space for the log partition.
 
+## Template Rendering Issues
+
+### Template Variables Not Displaying
+
+**Symptoms**: Template variables like `{{ now.year }}` show as undefined errors.
+
+**Solutions**:
+
+- Ensure the application's context processors are properly defined.
+- Check for syntax errors in templates.
+- Verify that the necessary variables are being passed to the templates.
+- Restart the service after making template changes.
+
 ## Getting Help
 
 If you're unable to resolve an issue using this troubleshooting guide:
@@ -206,8 +219,11 @@ Here are some useful commands for troubleshooting:
 # Check service status
 sudo systemctl status creaturebox-web
 
-# View service logs
-sudo journalctl -u creaturebox-web
+# View service logs (last 50 entries)
+sudo journalctl -u creaturebox-web -n 50
+
+# View service logs in real-time
+sudo journalctl -u creaturebox-web -f
 
 # Check disk space
 df -h

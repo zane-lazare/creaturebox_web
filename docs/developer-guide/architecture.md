@@ -99,6 +99,15 @@ Security measures implemented in the architecture:
 - **Rate Limiting**: Prevents brute force attacks on login
 - **HTTP Headers**: Security headers to prevent common web vulnerabilities
 
+## Template System
+
+The application uses Jinja2 templates with several features:
+
+- **Template Inheritance**: All templates extend from a base template
+- **Context Processors**: Global variables like `now` are available in all templates
+- **Macros**: Reusable components can be defined as macros
+- **Conditional Rendering**: Templates can conditionally show or hide elements
+
 ## Deployment Architecture
 
 For production deployment, the application uses:

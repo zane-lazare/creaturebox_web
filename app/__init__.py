@@ -6,6 +6,7 @@ This package contains the main Flask application for the Creaturebox Web Interfa
 
 import os
 import logging
+import datetime
 from logging.handlers import RotatingFileHandler
 from flask import Flask
 from flask_wtf.csrf import CSRFProtect
@@ -71,6 +72,11 @@ def create_app(test_config=None):
         
         app.logger.setLevel(logging.INFO)
         app.logger.info('Creaturebox Web Interface startup')
+    
+    # Add context processors
+    @app.context_processor
+    def inject_now():
+        return {'now': datetime.datetime.now()}
     
     # Add security headers
     @app.after_request

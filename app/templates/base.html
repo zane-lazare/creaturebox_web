@@ -65,7 +65,7 @@
         </main>
 
         <footer class="main-footer">
-            <p>&copy; 2025 Creaturebox Web Interface</p>
+            <p>&copy; {% if now is defined %}{{ now.year }}{% else %}2025{% endif %} Creaturebox Web Interface</p>
         </footer>
     </div>
 

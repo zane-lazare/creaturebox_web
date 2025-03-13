@@ -73,9 +73,10 @@ def create_app(test_config=None):
         app.logger.setLevel(logging.INFO)
         app.logger.info('Creaturebox Web Interface startup')
     
-    # Add context processors
+    # Add context processors for template variables
     @app.context_processor
     def inject_now():
+        """Make the current datetime available to all templates as 'now'."""
         return {'now': datetime.datetime.now()}
     
     # Add security headers

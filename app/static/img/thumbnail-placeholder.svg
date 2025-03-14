@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240">
+  <!-- Background -->
+  <rect width="240" height="240" fill="#f0f0f0"/>
+  
+  <!-- Photo frame outline -->
+  <rect x="40" y="40" width="160" height="120" rx="4" ry="4" 
+        fill="#e0e0e0" stroke="#cccccc" stroke-width="2"/>
+  
+  <!-- Mountains outline -->
+  <path d="M40 160 L90 100 L130 130 L180 80 L200 100 L200 160 Z" 
+        fill="#d0d0d0" stroke="#cccccc" stroke-width="1"/>
+  
+  <!-- Sun -->
+  <circle cx="70" cy="70" r="15" fill="#d0d0d0"/>
+  
+  <!-- Loading spinner -->
+  <g transform="translate(120, 120)">
+    <circle cx="0" cy="0" r="30" fill="none" stroke="#8030a0" stroke-width="6" stroke-dasharray="30 150" stroke-linecap="round">
+      <animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="1.5s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+  
+  <!-- Loading text -->
+  <text x="120" y="190" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#666">
+    Loading...
+  </text>
+</svg>

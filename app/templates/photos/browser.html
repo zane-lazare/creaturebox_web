@@ -107,6 +107,42 @@
         margin-bottom: 20px;
     }
     
+    .left-controls, .right-controls {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .control-button {
+        background-color: var(--primary-color);
+        color: white;
+        border: none;
+        border-radius: 4px;
+        padding: 8px 12px;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+    
+    .control-button:hover {
+        background-color: var(--primary-color-dark);
+    }
+    
+    .control-button:disabled {
+        background-color: var(--border-color);
+        cursor: not-allowed;
+    }
+    
+    .selection-controls {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    #selection-count {
+        font-size: 0.9rem;
+        color: var(--text-muted);
+    }
+    
     .view-toggle {
         display: flex;
         border: 1px solid var(--border-color);
@@ -252,6 +288,30 @@
         text-overflow: ellipsis;
     }
     
+    .item-card.selectable {
+        cursor: pointer;
+        position: relative;
+    }
+    
+    .item-card.selectable::before {
+        content: '';
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 2px solid white;
+        background-color: rgba(255, 255, 255, 0.3);
+        z-index: 5;
+        box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+    }
+    
+    .item-card.selectable.selected::before {
+        background-color: var(--primary-color);
+        border-color: white;
+    }
+    
     .loading-indicator {
         display: flex;
         justify-content: center;
@@ -334,18 +394,29 @@
         
         <div class="content-display">
             <div class="directory-controls">
-                <div class="view-toggle">
-                    <button class="view-toggle-button active" data-view="grid">Grid</button>
-                    <button class="view-toggle-button" data-view="list">List</button>
+                <div class="left-controls">
+                    <div class="view-toggle">
+                        <button class="view-toggle-button active" data-view="grid">Grid</button>
+                        <button class="view-toggle-button" data-view="list">List</button>
+                    </div>
+                    
+                    <button id="select-mode-button" class="control-button">Select</button>
+                    <div id="selection-controls" class="selection-controls" style="display: none;">
+                        <span id="selection-count">0 selected</span>
+                        <button id="download-selection-button" class="control-button" disabled>Download</button>
+                        <button id="cancel-selection-button" class="control-button">Cancel</button>
+                    </div>
                 </div>
                 
-                <div class="sorting-controls">
-                    <label for="sort-select">Sort by:</label>
-                    <select id="sort-select" class="sort-select">
-                        <option value="name">Name</option>
-                        <option value="date">Date</option>
-                        <option value="size">Size</option>
-                    </select>
+                <div class="right-controls">
+                    <div class="sorting-controls">
+                        <label for="sort-select">Sort by:</label>
+                        <select id="sort-select" class="sort-select">
+                            <option value="name">Name</option>
+                            <option value="date">Date</option>
+                            <option value="size">Size</option>
+                        </select>
+                    </div>
                 </div>
             </div>
             
@@ -366,6 +437,8 @@
         let currentPath = '';
         let viewMode = 'grid';
         let sortMode = 'name';
+        let selectionMode = false;
+        let selectedItems = new Set();
         
         // DOM elements
         const rootDirectoriesList = document.getElementById('root-directories');
@@ -373,6 +446,11 @@
         const contentContainer = document.getElementById('content-container');
         const viewToggleButtons = document.querySelectorAll('.view-toggle-button');
         const sortSelect = document.getElementById('sort-select');
+        const selectModeButton = document.getElementById('select-mode-button');
+        const selectionControls = document.getElementById('selection-controls');
+        const selectionCount = document.getElementById('selection-count');
+        const downloadSelectionButton = document.getElementById('download-selection-button');
+        const cancelSelectionButton = document.getElementById('cancel-selection-button');
         
         // Initialize the browser
         loadRootDirectories();
@@ -390,6 +468,21 @@
         sortSelect.addEventListener('change', function() {
             sortMode = this.value;
             browsePath(currentPath);
+        });
+        
+        // Selection mode event listeners
+        selectModeButton.addEventListener('click', function() {
+            toggleSelectionMode();
+        });
+        
+        cancelSelectionButton.addEventListener('click', function() {
+            exitSelectionMode();
+        });
+        
+        downloadSelectionButton.addEventListener('click', function() {
+            if (selectedItems.size > 0) {
+                downloadSelectedItems();
+            }
         });
         
         // Functions
@@ -494,6 +587,8 @@
                 card.className = 'item-card';
                 
                 if (item.is_dir) {
+                    card.dataset.isDir = 'true';
+                    card.dataset.path = item.path;
                     card.addEventListener('click', () => browsePath(item.path));
                     card.innerHTML = `
                         <div class="item-thumbnail">
@@ -508,6 +603,8 @@
                         </div>
                     `;
                 } else if (item.is_image) {
+                    card.dataset.isImage = 'true';
+                    card.dataset.path = item.path;
                     card.addEventListener('click', () => openViewer(item.path));
                     card.innerHTML = `
                         <div class="item-thumbnail">
@@ -523,6 +620,8 @@
                         </div>
                     `;
                 } else {
+                    card.dataset.isFile = 'true';
+                    card.dataset.path = item.path;
                     card.innerHTML = `
                         <div class="item-thumbnail">
                             <div class="item-icon">📄</div>
@@ -656,6 +755,166 @@
         function formatDate(dateString) {
             const date = new Date(dateString);
             return date.toLocaleDateString();
+        }
+        
+        // Selection mode functions
+        function toggleSelectionMode() {
+            selectionMode = !selectionMode;
+            
+            if (selectionMode) {
+                // Enter selection mode
+                selectModeButton.style.display = 'none';
+                selectionControls.style.display = 'flex';
+                selectedItems.clear();
+                updateSelectionCount();
+                
+                // Update item cards to show selection state
+                document.querySelectorAll('.item-card').forEach(card => {
+                    if (card.dataset.isImage === 'true') {
+                        card.classList.add('selectable');
+                        card.addEventListener('click', toggleItemSelection);
+                    }
+                });
+            } else {
+                // Exit selection mode
+                exitSelectionMode();
+            }
+        }
+        
+        function exitSelectionMode() {
+            selectionMode = false;
+            selectModeButton.style.display = 'block';
+            selectionControls.style.display = 'none';
+            selectedItems.clear();
+            
+            // Remove selection styling and event listeners
+            document.querySelectorAll('.item-card').forEach(card => {
+                card.classList.remove('selectable', 'selected');
+                card.removeEventListener('click', toggleItemSelection);
+            });
+            
+            // Re-add normal event listeners
+            document.querySelectorAll('.item-card').forEach(card => {
+                if (card.dataset.isDir === 'true') {
+                    const path = card.dataset.path;
+                    card.onclick = () => browsePath(path);
+                } else if (card.dataset.isImage === 'true') {
+                    const path = card.dataset.path;
+                    card.onclick = () => openViewer(path);
+                }
+            });
+        }
+        
+        function toggleItemSelection(event) {
+            // Prevent normal click behavior
+            event.preventDefault();
+            event.stopPropagation();
+            
+            const card = this;
+            const imagePath = card.dataset.path;
+            
+            if (selectedItems.has(imagePath)) {
+                // Deselect
+                selectedItems.delete(imagePath);
+                card.classList.remove('selected');
+            } else {
+                // Select
+                selectedItems.add(imagePath);
+                card.classList.add('selected');
+            }
+            
+            updateSelectionCount();
+        }
+        
+        function updateSelectionCount() {
+            const count = selectedItems.size;
+            selectionCount.textContent = count === 1 ? '1 selected' : `${count} selected`;
+            downloadSelectionButton.disabled = count === 0;
+        }
+        
+        function downloadSelectedItems() {
+            const images = Array.from(selectedItems);
+            if (images.length === 0) return;
+            
+            // For a single image, use direct download
+            if (images.length === 1) {
+                window.location.href = `/photos/api/download?path=${encodeURIComponent(images[0])}`;
+                exitSelectionMode();
+                return;
+            }
+            
+            // For multiple images, create a batch download
+            // Show a loading indicator
+            contentContainer.innerHTML = `
+                <div class="loading-indicator">
+                    <div class="spinner"></div>
+                    <p>Preparing download...</p>
+                </div>
+            `;
+            
+            // Send the batch download request
+            fetch('/photos/api/batch-download', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    images: images,
+                    filename: `creaturebox_photos_${new Date().toISOString().slice(0, 10)}.zip`,
+                    include_folders: false
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Check the download status
+                    checkDownloadStatus(data.task_id);
+                } else {
+                    showError(data.message || 'Failed to create download');
+                    exitSelectionMode();
+                }
+            })
+            .catch(error => {
+                console.error('Error creating batch download:', error);
+                showError('Error creating download. Please try again.');
+                exitSelectionMode();
+            });
+        }
+        
+        function checkDownloadStatus(taskId) {
+            fetch(`/photos/api/download-status?task_id=${encodeURIComponent(taskId)}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        if (data.status === 'completed' && data.download_url) {
+                            // Download is ready, redirect to download URL
+                            window.location.href = data.download_url;
+                            // Exit selection mode and refresh the view
+                            exitSelectionMode();
+                            browsePath(currentPath);
+                        } else if (data.status === 'failed') {
+                            // Download failed
+                            showError('Download preparation failed. Please try again.');
+                            exitSelectionMode();
+                            browsePath(currentPath);
+                        } else {
+                            // Still processing, check again after a delay
+                            setTimeout(() => {
+                                checkDownloadStatus(taskId);
+                            }, 1000);
+                        }
+                    } else {
+                        showError(data.message || 'Failed to check download status');
+                        exitSelectionMode();
+                        browsePath(currentPath);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error checking download status:', error);
+                    showError('Error checking download status. Please try again.');
+                    exitSelectionMode();
+                    browsePath(currentPath);
+                });
         }
     });
 </script>

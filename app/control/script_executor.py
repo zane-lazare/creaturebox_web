@@ -100,6 +100,10 @@ def execute_script(script_name, parameters=None, working_dir=None, timeout=None)
     # Set working directory
     if not working_dir:
         working_dir = os.path.dirname(script_path)
+    
+    # Additional debug info for troubleshooting
+    logger.info(f"Working directory: {working_dir}")
+    logger.info(f"Script directory contents: {os.listdir(working_dir) if os.path.exists(working_dir) else 'Directory not found'}")
         
     start_time = time.time()
     

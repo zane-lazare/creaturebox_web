@@ -40,6 +40,15 @@
                             </div>
                         </div>
                     </div>
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <div class="d-grid">
+                                <button id="direct-test-btn" class="btn btn-sm btn-outline-info">
+                                    <i class="bi bi-bug"></i> Direct Script Test
+                                </button>
+                            </div>
+                        </div>
+                    </div>
 
                     <div class="row mt-4">
                         <div class="col-12">
@@ -318,6 +327,43 @@ document.addEventListener('DOMContentLoaded', function() {
         if (confirm('Calibrating the camera may take a minute or more. Continue?')) {
             executeScript('TakePhoto.py', 'Calibrating camera...');
         }
+    });
+    
+    // Handle direct test button
+    document.getElementById('direct-test-btn').addEventListener('click', function() {
+        // Show modal for feedback
+        const modal = new bootstrap.Modal(document.getElementById('executionModal'));
+        modal.show();
+        document.getElementById('executionModalLabel').textContent = 'Direct Script Test';
+        document.getElementById('execution-status').textContent = 'Testing direct script execution...';
+        document.getElementById('execution-output').textContent = '';
+        
+        // Call the debug test endpoint
+        fetch('/control/test_camera')
+            .then(response => response.json())
+            .then(data => {
+                let output = JSON.stringify(data, null, 2);
+                document.getElementById('execution-output').textContent = output;
+                
+                if (data.success) {
+                    document.getElementById('execution-status').textContent = 'Direct script test succeeded';
+                    document.getElementById('execution-status').className = 'text-success';
+                    document.getElementById('execution-progress').classList.add('bg-success');
+                } else {
+                    document.getElementById('execution-status').textContent = 'Direct script test failed';
+                    document.getElementById('execution-status').className = 'text-danger';
+                    document.getElementById('execution-progress').classList.add('bg-danger');
+                }
+                
+                document.getElementById('execution-progress').classList.remove('progress-bar-animated');
+            })
+            .catch(error => {
+                document.getElementById('execution-status').textContent = 'Error: ' + error.message;
+                document.getElementById('execution-status').className = 'text-danger';
+                document.getElementById('execution-output').textContent = error.toString();
+                document.getElementById('execution-progress').classList.remove('progress-bar-animated');
+                document.getElementById('execution-progress').classList.add('bg-danger');
+            });
     });
     
     // Load settings button

@@ -170,42 +170,96 @@ def running_scripts():
 def test_camera():
     """Development test endpoint for camera functionality."""
     try:
-        # Try to directly execute the camera script
-        import subprocess
-        import sys
         import os
+        import sys
+        import subprocess
+        from app.utils.paths import get_app_root, get_script_path
         
-        # Get repository root
-        from app.utils.paths import get_app_root
-        repo_root = get_app_root()
+        # Get information about the environment
+        info = {
+            'environment': {
+                'cwd': os.getcwd(),
+                'python_executable': sys.executable,
+                'platform': sys.platform
+            }
+        }
         
-        # Construct script path
-        script_path = os.path.join(repo_root, 'software', 'TakePhoto.py')
-        print(f"[DEBUG] Testing direct script execution at: {script_path}")
+        # Test the path resolution
+        app_root = get_app_root()
+        info['app_root'] = app_root
         
-        if not os.path.exists(script_path):
-            return jsonify({
+        # Check script existence
+        script_name = 'TakePhoto.py'
+        script_path = get_script_path(script_name)
+        info['script_path'] = script_path
+        info['script_exists'] = os.path.exists(script_path) if script_path else False
+        
+        # Alternative paths to check
+        alternative_paths = [
+            os.path.join(app_root, 'software', script_name),
+            os.path.join(app_root, 'software', 'Scripts', script_name),
+            os.path.join('/home/pi/Desktop/Mothbox', script_name)
+        ]
+        
+        info['alternative_paths'] = {}
+        for path in alternative_paths:
+            info['alternative_paths'][path] = os.path.exists(path)
+        
+        # Try to list directory contents
+        software_dir = os.path.join(app_root, 'software')
+        if os.path.exists(software_dir):
+            info['software_directory'] = os.listdir(software_dir)
+        else:
+            info['software_directory'] = f"Directory not found: {software_dir}"
+        
+        # Check key directories
+        directories_to_check = [
+            '/opt/creaturebox_web',
+            '/home/pi/Desktop/Mothbox',
+            '/home/pi/Desktop'
+        ]
+        
+        info['directories'] = {}
+        for directory in directories_to_check:
+            info['directories'][directory] = {
+                'exists': os.path.exists(directory),
+                'contents': os.listdir(directory) if os.path.exists(directory) else None
+            }
+        
+        # Direct script execution test if path exists
+        if info['script_exists']:
+            try:
+                # Run the script with a timeout to avoid hanging
+                result = subprocess.run(
+                    [sys.executable, script_path],
+                    capture_output=True,
+                    text=True,
+                    timeout=5  # Short timeout for testing
+                )
+                
+                info['direct_execution'] = {
+                    'success': result.returncode == 0,
+                    'stdout': result.stdout,
+                    'stderr': result.stderr,
+                    'return_code': result.returncode
+                }
+            except subprocess.TimeoutExpired:
+                info['direct_execution'] = {
+                    'success': False,
+                    'error': 'Script execution timed out after 5 seconds'
+                }
+            except Exception as e:
+                info['direct_execution'] = {
+                    'success': False,
+                    'error': str(e)
+                }
+        else:
+            info['direct_execution'] = {
                 'success': False,
-                'error': f"Script not found at: {script_path}"
-            })
+                'error': 'Script not found, cannot execute'
+            }
         
-        # Get Python executable
-        python_exe = sys.executable
-        
-        # Execute directly
-        result = subprocess.run(
-            [python_exe, script_path],
-            capture_output=True,
-            text=True,
-            timeout=30
-        )
-        
-        return jsonify({
-            'success': result.returncode == 0,
-            'stdout': result.stdout,
-            'stderr': result.stderr,
-            'return_code': result.returncode,
-        })
+        return jsonify(info)
     
     except Exception as e:
         return jsonify({

@@ -80,8 +80,9 @@ Added detailed troubleshooting documentation:
 7. `software/TakePhoto_wrapper.py` - New wrapper for TakePhoto.py
 8. `software/CheckCamera_wrapper.py` - New wrapper for CheckCamera.py
 9. `scripts/validate_paths.py` - New script for validating and fixing paths
-10. `scripts/update_deployment.sh` - Updated for better deployment handling
-11. `docs/troubleshooting/camera_issues.md` - New troubleshooting guide
+10. `scripts/run_validation.sh` - New script to properly run validation with correct environment
+11. `scripts/update_deployment.sh` - Updated for better deployment handling
+12. `docs/troubleshooting/camera_issues.md` - New troubleshooting guide
 
 ## Usage Instructions
 
@@ -99,6 +100,6 @@ Added detailed troubleshooting documentation:
 
 ### For System Administrators
 
-1. When deploying, run the path validation script to check for issues: `python scripts/validate_paths.py --verbose --fix`
+1. When deploying, run the path validation script to check for issues: `bash scripts/run_validation.sh --verbose --fix`
 2. Ensure proper permissions on all scripts: `chmod -R 755 /opt/creaturebox_web/software`
 3. Check logs for detailed error information: `journalctl -u creaturebox-web -f`

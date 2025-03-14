@@ -137,8 +137,15 @@ python scripts/validate_paths.py --verbose --fix
 echo "Adding execute permissions to scripts..."
 sudo chmod +x "$REPO_DIR/scripts/update_deployment.sh"
 sudo chmod +x "$REPO_DIR/scripts/validate_paths.py"
+sudo chmod +x "$REPO_DIR/scripts/run_validation.sh"
+
+# Copy scripts to installation directory
+echo "Copying scripts to installation directory..."
+sudo mkdir -p "$INSTALL_DIR/scripts"
 sudo cp "$REPO_DIR/scripts/validate_paths.py" "$INSTALL_DIR/scripts/"
+sudo cp "$REPO_DIR/scripts/run_validation.sh" "$INSTALL_DIR/scripts/"
 sudo chmod +x "$INSTALL_DIR/scripts/validate_paths.py"
+sudo chmod +x "$INSTALL_DIR/scripts/run_validation.sh"
 
 # Restart service
 echo -e "${GREEN}Restarting service...${NC}"

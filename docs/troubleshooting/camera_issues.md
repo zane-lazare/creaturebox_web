@@ -38,7 +38,7 @@ If you see JSON-related errors in the browser console when trying to use camera 
 
    ```bash
    cd /opt/creaturebox_web
-   python scripts/validate_paths.py --verbose --fix
+   bash scripts/run_validation.sh --verbose --fix
    ```
 
 4. **Test Scripts Directly**
@@ -150,7 +150,7 @@ If the wrapper scripts are missing or corrupted, you can recreate them using the
 
 ```bash
 cd /opt/creaturebox_web
-python scripts/validate_paths.py --verbose --fix
+bash scripts/run_validation.sh --verbose --fix
 ```
 
 ### Testing Direct Script Execution

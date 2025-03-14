@@ -17,8 +17,13 @@ script_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(script_dir)
 sys.path.insert(0, parent_dir)
 
-# Try to import our path utilities
+# Also add the current directory in case we're in the repo root
+cur_dir = os.getcwd()
+sys.path.insert(0, cur_dir)
+
+# Try different approaches to import path utilities
 try:
+    # Try standard import
     from app.utils.paths import (
         get_app_root, 
         get_config_dir, 
@@ -27,8 +32,50 @@ try:
         validate_paths
     )
 except ImportError:
-    print("ERROR: Could not import path utilities. Make sure you're running this from the repository root.")
-    sys.exit(1)
+    try:
+        # Try with absolute import path
+        import importlib.util
+        import sys
+        
+        # Try to find app module in common locations
+        possible_paths = [
+            os.path.join(parent_dir, 'app'),             # If in scripts directory
+            os.path.join(cur_dir, 'app'),                # If in repo root
+            '/opt/creaturebox_web/app',                  # If in production path
+            os.path.join(cur_dir, '../app'),            # If in subfolder
+            os.path.join(os.path.expanduser('~'), 'creaturebox_web/app')  # If in user home
+        ]
+        
+        app_path = None
+        for path in possible_paths:
+            if os.path.exists(path) and os.path.isdir(path):
+                app_path = path
+                break
+        
+        if app_path is None:
+            print("ERROR: Could not locate the app directory. Tried:")
+            for path in possible_paths:
+                print(f"  - {path}")
+            sys.exit(1)
+        
+        # Add app path to system path
+        sys.path.insert(0, os.path.dirname(app_path))
+        
+        # Try import again
+        from app.utils.paths import (
+            get_app_root, 
+            get_config_dir, 
+            get_photos_dir,
+            get_script_path,
+            validate_paths
+        )
+        print(f"INFO: Successfully imported path utilities from {app_path}")
+    except ImportError as e:
+        print(f"ERROR: Could not import path utilities. {str(e)}")
+        print("Make sure you're running this from the repository root or installation directory.")
+        print("Alternatively, you can run this script with the full path to the Python interpreter from the virtual environment:")
+        print("  /opt/creaturebox_web/venv/bin/python /opt/creaturebox_web/scripts/validate_paths.py")
+        sys.exit(1)
 
 # Configure logging
 logging.basicConfig(

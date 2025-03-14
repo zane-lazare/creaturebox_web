@@ -27,30 +27,25 @@ SCRIPT_INVENTORY = {
     "TakePhoto.py": {
         "category": "camera",
         "description": "Takes a photo with the current camera settings",
-        "path": "software/TakePhoto.py",  # Path relative to app root
+        "path": "software/TakePhoto_wrapper.py",  # Using the wrapper for JSON output
         "requires_sudo": True,
         "timeout": 60,  # Seconds
         "parameters": [],
-        "output_pattern": r"Image saved to (.+)",
-        "success_pattern": r"Image saved to",
-        "error_patterns": [
-            r"not enough space to take more photos",
-            r"Error:"
-        ]
+        "output_pattern": None,  # No pattern needed as it returns JSON
+        "success_pattern": None,  # Success determined by JSON parsing
+        "error_patterns": []  # Error determined by JSON parsing
     },
     
     "CheckCamera.py": {
         "category": "camera",
         "description": "Check if the camera is available and working",
-        "path": "software/CheckCamera.py",
+        "path": "software/CheckCamera_wrapper.py",  # Using the wrapper for JSON output
         "requires_sudo": True,
         "timeout": 10,  # Seconds
         "parameters": [],
         "output_pattern": None,  # Outputs JSON
         "success_pattern": None,  # Success determined by JSON parsing
-        "error_patterns": [
-            r"Error:"
-        ]
+        "error_patterns": []  # Error determined by JSON parsing
     },
     
     # Light Control Scripts

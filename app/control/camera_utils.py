@@ -37,17 +37,25 @@ def check_camera_status():
         result = execute_script("CheckCamera.py")
         
         if result.success and result.output:
-            try:
-                # Parse JSON output from the script
-                camera_info = json.loads(result.output)
-                status["available"] = camera_info.get("available", False)
-                status["model"] = camera_info.get("model")
-                status["error"] = camera_info.get("error")
-            except json.JSONDecodeError:
-                # Fallback if JSON parsing fails
-                status["available"] = "Camera detected" in result.output
-                if not status["available"]:
-                    status["error"] = "Could not parse camera information"
+            # The script_executor should have already parsed the JSON
+            # This will happen if the output was valid JSON
+            if hasattr(result, 'json_parsed') and result.json_parsed:
+                # Use the already parsed JSON from the executor
+                status["available"] = result.json_parsed.get("available", False)
+                status["model"] = result.json_parsed.get("model")
+                status["error"] = result.json_parsed.get("error")
+            else:
+                try:
+                    # Try to parse JSON output from the script
+                    camera_info = json.loads(result.output)
+                    status["available"] = camera_info.get("available", False)
+                    status["model"] = camera_info.get("model")
+                    status["error"] = camera_info.get("error")
+                except json.JSONDecodeError:
+                    # Fallback if JSON parsing fails
+                    status["available"] = "Camera detected" in result.output
+                    if not status["available"]:
+                        status["error"] = "Could not parse camera information"
         else:
             status["error"] = result.error or "Error checking camera"
             

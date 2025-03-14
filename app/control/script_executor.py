@@ -128,6 +128,11 @@ def execute_script(script_name, parameters=None, working_dir=None, timeout=None)
         logger.debug(f"Script output: {stdout}")
         if stderr:
             logger.warning(f"Script error output: {stderr}")
+            
+        # More detailed logging for debugging
+        logger.debug(f"Command executed: {' '.join(command)}")
+        logger.debug(f"Working directory: {working_dir}")
+        logger.debug(f"Return code: {result.returncode}")
         
         # Check return code
         if result.returncode != 0:
@@ -140,8 +145,46 @@ def execute_script(script_name, parameters=None, working_dir=None, timeout=None)
                 execution_time=execution_time
             )
         
-        # Parse output if pattern exists
+        # Try to parse JSON output first if it's a wrapper script
         parsed_output = None
+        json_parsed = None
+        
+        # Check if output might be JSON
+        if stdout and (stdout.strip().startswith('{') and stdout.strip().endswith('}')):  
+            try:
+                json_parsed = json.loads(stdout)
+                logger.debug(f"Successfully parsed JSON output: {json_parsed}")
+                
+                # If it's JSON, use its success value directly
+                if 'success' in json_parsed:
+                    if not json_parsed['success']:
+                        error_msg = json_parsed.get('error', "Unknown error")
+                        logger.error(f"Script reported error via JSON: {error_msg}")
+                        return ScriptExecutionResult(
+                            success=False,
+                            output=json_parsed.get('output', stdout),
+                            error=error_msg,
+                            parsed_output=json_parsed.get('image_path'),
+                            execution_time=json_parsed.get('execution_time', execution_time)
+                        )
+                    
+                    # If successful, extract parsed output if available
+                    parsed_output = json_parsed.get('image_path')
+                    
+                    # Return success with the JSON data
+                    return ScriptExecutionResult(
+                        success=True,
+                        output=json_parsed.get('output', stdout),
+                        error=None,
+                        parsed_output=parsed_output,
+                        execution_time=json_parsed.get('execution_time', execution_time)
+                    )
+            except json.JSONDecodeError as e:
+                # Not JSON, continue with regular parsing
+                logger.debug(f"Output is not valid JSON: {e}")
+        
+        # Standard parsing for non-JSON outputs
+        # Parse output if pattern exists
         output_pattern = script_info.get('output_pattern')
         if output_pattern and stdout:
             match = re.search(output_pattern, stdout)

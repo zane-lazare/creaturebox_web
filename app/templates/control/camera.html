@@ -13,7 +13,7 @@
                 </ol>
             </nav>
             <h1 class="mb-3">Camera Control</h1>
-            <p class="lead">Control camera settings and take photos.</p>
+            <p class="lead">Control camera settings and take photos. <a href="{{ url_for('control.camera_debug') }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-bug"></i> Debug</a></p>
         </div>
     </div>
 
@@ -435,7 +435,11 @@ document.addEventListener('DOMContentLoaded', function() {
         // Update modal title and content
         document.getElementById('executionModalLabel').textContent = statusText;
         document.getElementById('execution-status').textContent = 'Processing...';
+        document.getElementById('execution-status').className = '';
         document.getElementById('execution-output').textContent = '';
+        document.getElementById('raw-execution-output').textContent = '';
+        document.getElementById('execution-progress').classList.remove('bg-success', 'bg-danger');
+        document.getElementById('execution-progress').classList.add('progress-bar-animated');
         
         // Execute script
         fetch('/control/execute/' + scriptName, {
@@ -447,39 +451,90 @@ document.addEventListener('DOMContentLoaded', function() {
                 parameters: []
             }),
         })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                document.getElementById('execution-status').textContent = 'Operation completed successfully';
-                document.getElementById('execution-status').className = 'text-success';
-                document.getElementById('execution-output').textContent = data.output || 'No output';
-                document.getElementById('execution-progress').style.width = '100%';
-                document.getElementById('execution-progress').classList.remove('progress-bar-animated');
-                document.getElementById('execution-progress').classList.add('bg-success');
-                
-                // Update the UI with the new photo if available
-                if (data.parsed_output && scriptName === 'TakePhoto.py') {
-                    const photoPath = data.parsed_output;
-                    // Here we would update the recent photo display
-                    document.getElementById('last-photo').textContent = 'Photo taken at ' + new Date().toLocaleTimeString();
+        .then(response => {
+            // Log the raw response for debugging
+            return response.text().then(text => {
+                try {
+                    // Save raw text for debugging
+                    document.getElementById('raw-execution-output').textContent = text;
+                    
+                    // Try to parse as JSON
+                    const data = JSON.parse(text);
+                    return handleScriptResponse(data, scriptName);
+                } catch (e) {
+                    // Handle non-JSON response
+                    console.error('JSON parsing error:', e);
+                    document.getElementById('execution-status').textContent = 'Error: Invalid response format';
+                    document.getElementById('execution-status').className = 'text-danger';
+                    document.getElementById('execution-output').textContent = "Could not parse response as JSON. See raw output for details.";
+                    document.getElementById('execution-progress').style.width = '100%';
+                    document.getElementById('execution-progress').classList.remove('progress-bar-animated');
+                    document.getElementById('execution-progress').classList.add('bg-danger');
                 }
-            } else {
-                document.getElementById('execution-status').textContent = 'Operation failed';
-                document.getElementById('execution-status').className = 'text-danger';
-                document.getElementById('execution-output').textContent = data.error || 'Unknown error';
-                document.getElementById('execution-progress').style.width = '100%';
-                document.getElementById('execution-progress').classList.remove('progress-bar-animated');
-                document.getElementById('execution-progress').classList.add('bg-danger');
-            }
+            });
         })
         .catch(error => {
+            console.error('Fetch error:', error);
             document.getElementById('execution-status').textContent = 'Error: ' + error.message;
             document.getElementById('execution-status').className = 'text-danger';
+            document.getElementById('execution-output').textContent = error.toString();
             document.getElementById('execution-progress').style.width = '100%';
             document.getElementById('execution-progress').classList.remove('progress-bar-animated');
             document.getElementById('execution-progress').classList.add('bg-danger');
         });
     }
+    
+    function handleScriptResponse(data, scriptName) {
+        console.log('Handling script response:', data);
+        
+        if (data.success) {
+            document.getElementById('execution-status').textContent = 'Operation completed successfully';
+            document.getElementById('execution-status').className = 'text-success';
+            
+            // Format the output for display
+            let formattedOutput = data.output || 'No output';
+            // Clean up the output for display
+            if (formattedOutput.length > 1000) {
+                formattedOutput = formattedOutput.substring(0, 1000) + '... [output truncated]';
+            }
+            document.getElementById('execution-output').textContent = formattedOutput;
+            
+            document.getElementById('execution-progress').style.width = '100%';
+            document.getElementById('execution-progress').classList.remove('progress-bar-animated');
+            document.getElementById('execution-progress').classList.add('bg-success');
+            
+            // Update the UI with the new photo if available
+            if (data.parsed_output && scriptName === 'TakePhoto.py') {
+                const photoPath = data.parsed_output;
+                document.getElementById('last-photo').textContent = 'Photo taken at ' + new Date().toLocaleTimeString();
+            }
+        } else {
+            document.getElementById('execution-status').textContent = 'Operation failed';
+            document.getElementById('execution-status').className = 'text-danger';
+            document.getElementById('execution-output').textContent = data.error || 'Unknown error';
+            document.getElementById('execution-progress').style.width = '100%';
+                document.getElementById('execution-progress').classList.remove('progress-bar-animated');
+                document.getElementById('execution-progress').classList.add('bg-danger');
+            }
+            return data;
+        }
+    }
+    
+    // Toggle raw output display
+    document.getElementById('toggle-raw-output').addEventListener('click', function() {
+        const rawOutput = document.getElementById('raw-execution-output');
+        const regularOutput = document.getElementById('execution-output');
+        
+        if (rawOutput.style.display === 'none') {
+            rawOutput.style.display = 'block';
+            regularOutput.style.display = 'none';
+            this.textContent = 'Show Formatted Output';
+        } else {
+            rawOutput.style.display = 'none';
+            regularOutput.style.display = 'block';
+            this.textContent = 'Toggle Raw Output';
+        }
+    });
 });
 </script>
 {% endblock %}

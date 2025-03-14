@@ -60,6 +60,10 @@ echo -e "${GREEN}Updating installation files...${NC}"
 echo "Updating app directory..."
 sudo cp -r "$REPO_DIR/app" "$INSTALL_DIR/"
 
+# Update software directory (including wrapper scripts)
+echo "Updating software directory..."
+sudo cp -r "$REPO_DIR/software" "$INSTALL_DIR/"
+
 # Update requirements
 echo "Updating requirements..."
 sudo cp "$REPO_DIR/requirements.txt" "$INSTALL_DIR/"
@@ -112,6 +116,13 @@ fi
 sudo chown -R $MOTHBOX_OWNER:$MOTHBOX_OWNER "$STATIC_DIR"
 sudo chmod -R 755 "$STATIC_DIR"
 
+# Set execute permissions for wrapper scripts
+echo "Setting permissions for wrapper scripts..."
+sudo chmod +x "$INSTALL_DIR/software/TakePhoto_wrapper.py"
+sudo chmod +x "$INSTALL_DIR/software/CheckCamera_wrapper.py"
+sudo chown $MOTHBOX_OWNER:$MOTHBOX_OWNER "$INSTALL_DIR/software/TakePhoto_wrapper.py"
+sudo chown $MOTHBOX_OWNER:$MOTHBOX_OWNER "$INSTALL_DIR/software/CheckCamera_wrapper.py"
+
 # Install any new requirements
 echo -e "${GREEN}Installing new requirements...${NC}"
 cd "$INSTALL_DIR"
@@ -122,9 +133,12 @@ pip install -r requirements.txt
 echo "Validating path configuration..."
 python scripts/validate_paths.py --verbose --fix
 
-# Add execute permissions to update script
-echo "Adding execute permissions to update script..."
+# Add execute permissions to scripts
+echo "Adding execute permissions to scripts..."
 sudo chmod +x "$REPO_DIR/scripts/update_deployment.sh"
+sudo chmod +x "$REPO_DIR/scripts/validate_paths.py"
+sudo cp "$REPO_DIR/scripts/validate_paths.py" "$INSTALL_DIR/scripts/"
+sudo chmod +x "$INSTALL_DIR/scripts/validate_paths.py"
 
 # Restart service
 echo -e "${GREEN}Restarting service...${NC}"

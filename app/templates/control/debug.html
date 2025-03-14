@@ -1,0 +1,215 @@
+{% extends "base.html" %}
+
+{% block title %}Camera Debug{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('control.index') }}">Control Panel</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('control.camera') }}">Camera Control</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Debug</li>
+                </ol>
+            </nav>
+            <h1 class="mb-3">Camera Debug</h1>
+            <p class="lead">Diagnostic information for camera functionality.</p>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-lg-12">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Environment Information</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-bordered table-striped">
+                        <tbody>
+                            <tr>
+                                <th scope="row">App Root</th>
+                                <td>{{ debug_info.environment.app_root }}</td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Config Directory</th>
+                                <td>{{ debug_info.environment.config_dir }}</td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Python Version</th>
+                                <td>{{ debug_info.environment.python_version }}</td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Platform</th>
+                                <td>{{ debug_info.environment.platform }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Script Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="accordion" id="scriptAccordion">
+                        {% for script_name, script_info in debug_info.scripts.items() %}
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="heading{{ loop.index }}">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" 
+                                        data-bs-target="#collapse{{ loop.index }}" aria-expanded="false" 
+                                        aria-controls="collapse{{ loop.index }}">
+                                    {{ script_name }} - {% if script_info.exists %}Found{% else %}Not Found{% endif %}
+                                </button>
+                            </h2>
+                            <div id="collapse{{ loop.index }}" class="accordion-collapse collapse" 
+                                 aria-labelledby="heading{{ loop.index }}" data-bs-parent="#scriptAccordion">
+                                <div class="accordion-body">
+                                    <div class="mb-3">
+                                        <strong>Path:</strong> {{ script_info.path or 'Not found' }}
+                                    </div>
+                                    {% if script_info.info %}
+                                    <div class="mb-3">
+                                        <strong>Category:</strong> {{ script_info.info.category }}<br>
+                                        <strong>Description:</strong> {{ script_info.info.description }}<br>
+                                        <strong>Requires Sudo:</strong> {{ script_info.info.requires_sudo }}<br>
+                                        <strong>Timeout:</strong> {{ script_info.info.timeout }} seconds
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            {% if debug_info.camera_check %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Camera Check Results</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <span class="badge {{ 'bg-success' if debug_info.camera_check.success else 'bg-danger' }} me-2">
+                            {{ 'Success' if debug_info.camera_check.success else 'Failed' }}
+                        </span>
+                    </div>
+                    
+                    {% if debug_info.camera_check.error %}
+                    <div class="mb-3">
+                        <strong>Error:</strong>
+                        <pre class="bg-light p-3 border rounded">{{ debug_info.camera_check.error }}</pre>
+                    </div>
+                    {% endif %}
+                    
+                    {% if debug_info.camera_check.output %}
+                    <div class="mb-3">
+                        <strong>Output:</strong>
+                        <pre class="bg-light p-3 border rounded">{{ debug_info.camera_check.output }}</pre>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Path Resolution Test</h5>
+                    <button id="run-path-test" class="btn btn-sm btn-primary">Run Test</button>
+                </div>
+                <div class="card-body">
+                    <div id="path-test-results">
+                        <p class="text-muted">Click "Run Test" to check path resolution for camera scripts.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Direct Script Execution Test</h5>
+                    <button id="run-script-test" class="btn btn-sm btn-primary">Run Test</button>
+                </div>
+                <div class="card-body">
+                    <div id="script-test-results">
+                        <p class="text-muted">Click "Run Test" to execute the TakePhoto wrapper script directly.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Path resolution test
+    document.getElementById('run-path-test').addEventListener('click', function() {
+        this.disabled = true;
+        this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Testing...';
+        
+        const resultsContainer = document.getElementById('path-test-results');
+        resultsContainer.innerHTML = '<div class="alert alert-info">Testing path resolution...</div>';
+        
+        fetch('/control/test_paths')
+            .then(response => response.json())
+            .then(data => {
+                let html = '';
+                
+                if (data.success) {
+                    html += '<div class="alert alert-success">Path resolution successful!</div>';
+                } else {
+                    html += '<div class="alert alert-danger">Path resolution failed!</div>';
+                }
+                
+                html += '<h6>Results:</h6>';
+                html += '<pre class="bg-light p-3 border rounded">' + JSON.stringify(data, null, 2) + '</pre>';
+                
+                resultsContainer.innerHTML = html;
+                this.disabled = false;
+                this.innerHTML = 'Run Test';
+            })
+            .catch(error => {
+                resultsContainer.innerHTML = '<div class="alert alert-danger">Error: ' + error.message + '</div>';
+                this.disabled = false;
+                this.innerHTML = 'Run Test';
+            });
+    });
+    
+    // Direct script execution test
+    document.getElementById('run-script-test').addEventListener('click', function() {
+        this.disabled = true;
+        this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Testing...';
+        
+        const resultsContainer = document.getElementById('script-test-results');
+        resultsContainer.innerHTML = '<div class="alert alert-info">Running script directly...</div>';
+        
+        fetch('/control/test_camera')
+            .then(response => response.json())
+            .then(data => {
+                let html = '';
+                
+                if (data.success) {
+                    html += '<div class="alert alert-success">Script execution successful!</div>';
+                } else {
+                    html += '<div class="alert alert-danger">Script execution failed!</div>';
+                }
+                
+                html += '<h6>Results:</h6>';
+                html += '<pre class="bg-light p-3 border rounded">' + JSON.stringify(data, null, 2) + '</pre>';
+                
+                resultsContainer.innerHTML = html;
+                this.disabled = false;
+                this.innerHTML = 'Run Test';
+            })
+            .catch(error => {
+                resultsContainer.innerHTML = '<div class="alert alert-danger">Error: ' + error.message + '</div>';
+                this.disabled = false;
+                this.innerHTML = 'Run Test';
+            });
+    });
+});
+</script>
+{% endblock %}

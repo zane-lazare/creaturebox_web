@@ -7,7 +7,9 @@ including camera control, lighting control, and system management.
 
 from flask import Blueprint, current_app, render_template, request, jsonify, abort
 import os
+import sys
 import logging
+import json
 
 from .script_inventory import (
     get_scripts_by_category,
@@ -165,6 +167,79 @@ def running_scripts():
         'running_scripts': running
     })
 
+# Camera debug route
+@control_bp.route('/camera/debug')
+def camera_debug():
+    """Debug endpoint for camera functionality"""
+    try:
+        # Collect debug information
+        debug_info = {
+            "environment": {
+                "app_root": get_app_root(),
+                "config_dir": get_config_dir(),
+                "python_version": sys.version,
+                "platform": sys.platform
+            },
+            "scripts": {}
+        }
+        
+        # Check all camera scripts
+        for script_name in ["TakePhoto.py", "CheckCamera.py", "TakePhoto_wrapper.py", "CheckCamera_wrapper.py"]:
+            script_path = get_script_path(script_name)
+            script_exists = os.path.exists(script_path) if script_path else False
+            
+            debug_info["scripts"][script_name] = {
+                "path": script_path,
+                "exists": script_exists,
+                "info": get_script_info(script_name)
+            }
+            
+            # Try to run CheckCamera.py as a test
+            if script_name == "CheckCamera.py" and script_exists:
+                result = execute_script(script_name)
+                debug_info["camera_check"] = {
+                    "success": result.success,
+                    "output": result.output,
+                    "error": result.error
+                }
+        
+        return render_template("control/debug.html", debug_info=debug_info)
+    
+    except Exception as e:
+        logger.exception(f"Error in camera debug: {e}")
+        return f"Error in debug endpoint: {str(e)}"
+
+# Test paths route
+@control_bp.route('/test_paths')
+def test_paths():
+    """Test path resolution for scripts"""
+    try:
+        from app.utils.paths import validate_paths, get_script_path
+        
+        # Validate all paths
+        path_validation = validate_paths()
+        
+        # Check specific script paths
+        script_paths = {}
+        for script_name in ["TakePhoto.py", "CheckCamera.py", "TakePhoto_wrapper.py", "CheckCamera_wrapper.py"]:
+            script_path = get_script_path(script_name)
+            script_paths[script_name] = {
+                "path": script_path,
+                "exists": os.path.exists(script_path) if script_path else False
+            }
+        
+        return jsonify({
+            "success": path_validation["success"],
+            "path_validation": path_validation,
+            "script_paths": script_paths
+        })
+    except Exception as e:
+        logger.exception(f"Error testing paths: {e}")
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        })
+
 # Development test route to diagnose script execution
 @control_bp.route('/test_camera')
 def test_camera():
@@ -173,7 +248,7 @@ def test_camera():
         import os
         import sys
         import subprocess
-        from app.utils.paths import get_app_root, get_script_path
+        from app.utils.paths import get_app_root, get_script_path, get_config_dir
         
         # Get information about the environment
         info = {
@@ -189,79 +264,49 @@ def test_camera():
         info['app_root'] = app_root
         
         # Check script existence
-        script_name = 'TakePhoto.py'
-        script_path = get_script_path(script_name)
-        info['script_path'] = script_path
-        info['script_exists'] = os.path.exists(script_path) if script_path else False
-        
-        # Alternative paths to check
-        alternative_paths = [
-            os.path.join(app_root, 'software', script_name),
-            os.path.join(app_root, 'software', 'Scripts', script_name),
-            os.path.join('/home/pi/Desktop/Mothbox', script_name)
-        ]
-        
-        info['alternative_paths'] = {}
-        for path in alternative_paths:
-            info['alternative_paths'][path] = os.path.exists(path)
-        
-        # Try to list directory contents
-        software_dir = os.path.join(app_root, 'software')
-        if os.path.exists(software_dir):
-            info['software_directory'] = os.listdir(software_dir)
-        else:
-            info['software_directory'] = f"Directory not found: {software_dir}"
-        
-        # Check key directories
-        directories_to_check = [
-            '/opt/creaturebox_web',
-            '/home/pi/Desktop/Mothbox',
-            '/home/pi/Desktop'
-        ]
-        
-        info['directories'] = {}
-        for directory in directories_to_check:
-            info['directories'][directory] = {
-                'exists': os.path.exists(directory),
-                'contents': os.listdir(directory) if os.path.exists(directory) else None
+        script_paths = {}
+        for script_name in ["TakePhoto.py", "CheckCamera.py", "TakePhoto_wrapper.py", "CheckCamera_wrapper.py"]:
+            script_path = get_script_path(script_name)
+            script_paths[script_name] = {
+                "path": script_path,
+                "exists": os.path.exists(script_path) if script_path else False
             }
+        info['script_paths'] = script_paths
         
-        # Direct script execution test if path exists
-        if info['script_exists']:
+        # Try to run the wrapper script directly
+        wrapper_path = get_script_path("TakePhoto_wrapper.py")
+        if wrapper_path and os.path.exists(wrapper_path):
             try:
-                # Run the script with a timeout to avoid hanging
+                # Run the script with a timeout
                 result = subprocess.run(
-                    [sys.executable, script_path],
+                    [sys.executable, wrapper_path],
                     capture_output=True,
                     text=True,
-                    timeout=5  # Short timeout for testing
+                    timeout=10
                 )
                 
-                info['direct_execution'] = {
+                info['wrapper_execution'] = {
                     'success': result.returncode == 0,
                     'stdout': result.stdout,
                     'stderr': result.stderr,
                     'return_code': result.returncode
                 }
-            except subprocess.TimeoutExpired:
-                info['direct_execution'] = {
-                    'success': False,
-                    'error': 'Script execution timed out after 5 seconds'
-                }
+                
+                # Try to parse JSON output
+                try:
+                    json_result = json.loads(result.stdout)
+                    info['json_parsed'] = json_result
+                except json.JSONDecodeError as e:
+                    info['json_parse_error'] = str(e)
             except Exception as e:
-                info['direct_execution'] = {
-                    'success': False,
-                    'error': str(e)
-                }
+                info['wrapper_execution_error'] = str(e)
         else:
-            info['direct_execution'] = {
-                'success': False,
-                'error': 'Script not found, cannot execute'
-            }
+            info['wrapper_missing'] = True
         
         return jsonify(info)
     
     except Exception as e:
+        logger.exception(f"Error in test_camera: {e}")
         return jsonify({
             'success': False,
             'error': str(e)

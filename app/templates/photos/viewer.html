@@ -1,0 +1,637 @@
+{% extends 'base.html' %}
+
+{% block styles %}
+<style>
+    .photo-viewer {
+        display: flex;
+        height: calc(100vh - 180px);
+        min-height: 500px;
+        background-color: var(--card-bg);
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    
+    .viewer-main {
+        flex: 1;
+        position: relative;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background-color: var(--viewer-bg, #1a1a1a);
+        overflow: hidden;
+    }
+    
+    .viewer-controls {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        padding: 15px;
+        display: flex;
+        justify-content: space-between;
+        background: linear-gradient(to bottom, rgba(0,0,0,0.5), transparent);
+        color: white;
+        z-index: 10;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+    
+    .viewer-main:hover .viewer-controls,
+    .viewer-controls:hover {
+        opacity: 1;
+    }
+    
+    .control-button {
+        background: none;
+        border: none;
+        color: white;
+        cursor: pointer;
+        padding: 8px;
+        border-radius: 4px;
+        font-size: 1rem;
+        transition: background-color 0.2s;
+    }
+    
+    .control-button:hover {
+        background-color: rgba(255, 255, 255, 0.2);
+    }
+    
+    .control-button-group {
+        display: flex;
+        gap: 5px;
+    }
+    
+    .image-container {
+        position: relative;
+        max-width: 100%;
+        max-height: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        overflow: hidden;
+    }
+    
+    .image-container img {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+        transition: transform 0.3s ease;
+    }
+    
+    .navigation-arrows {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        z-index: 5;
+    }
+    
+    .nav-arrow {
+        background-color: rgba(0, 0, 0, 0.3);
+        color: white;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 1.5rem;
+        cursor: pointer;
+        transition: background-color 0.2s;
+        opacity: 0;
+        transform: translateX(0);
+        transition: opacity 0.3s, transform 0.3s;
+    }
+    
+    .nav-arrow:hover {
+        background-color: rgba(0, 0, 0, 0.5);
+    }
+    
+    .nav-prev {
+        margin-left: 15px;
+        transform: translateX(-20px);
+    }
+    
+    .nav-next {
+        margin-right: 15px;
+        transform: translateX(20px);
+    }
+    
+    .viewer-main:hover .nav-arrow {
+        opacity: 1;
+        transform: translateX(0);
+    }
+    
+    .metadata-panel {
+        width: 300px;
+        background-color: var(--sidebar-bg);
+        border-left: 1px solid var(--border-color);
+        overflow-y: auto;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .metadata-section {
+        margin-bottom: 25px;
+    }
+    
+    .metadata-section:last-child {
+        margin-bottom: 0;
+    }
+    
+    .metadata-heading {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--primary-color);
+        margin-top: 0;
+        margin-bottom: 10px;
+        padding-bottom: 5px;
+        border-bottom: 1px solid var(--border-color);
+    }
+    
+    .metadata-list {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+    
+    .metadata-item {
+        display: flex;
+        margin-bottom: 8px;
+    }
+    
+    .metadata-label {
+        flex: 0 0 40%;
+        font-weight: 500;
+        color: var(--text-muted);
+    }
+    
+    .metadata-value {
+        flex: 0 0 60%;
+        overflow-wrap: break-word;
+        word-break: break-word;
+    }
+    
+    .loading-indicator {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100%;
+        width: 100%;
+    }
+    
+    .spinner {
+        width: 40px;
+        height: 40px;
+        border: 4px solid rgba(255, 255, 255, 0.1);
+        border-radius: 50%;
+        border-top-color: var(--primary-color);
+        animation: spin 1s ease-in-out infinite;
+    }
+    
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+    
+    .error-container {
+        text-align: center;
+        color: white;
+        padding: 20px;
+    }
+    
+    .error-container h3 {
+        margin-top: 0;
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .photo-viewer {
+            flex-direction: column;
+            height: auto;
+        }
+        
+        .viewer-main {
+            height: 60vh;
+        }
+        
+        .metadata-panel {
+            width: 100%;
+            border-left: none;
+            border-top: 1px solid var(--border-color);
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="photo-viewer">
+    <div class="viewer-main">
+        <div class="viewer-controls">
+            <div class="control-button-group">
+                <button id="back-button" class="control-button" title="Back to browser">
+                    ← Back
+                </button>
+                <button id="zoom-out-button" class="control-button" title="Zoom out">
+                    -
+                </button>
+                <button id="zoom-reset-button" class="control-button" title="Reset zoom">
+                    100%
+                </button>
+                <button id="zoom-in-button" class="control-button" title="Zoom in">
+                    +
+                </button>
+            </div>
+            <div class="control-button-group">
+                <button id="download-button" class="control-button" title="Download image">
+                    Download
+                </button>
+            </div>
+        </div>
+        
+        <div id="image-container" class="image-container">
+            <div class="loading-indicator">
+                <div class="spinner"></div>
+            </div>
+        </div>
+        
+        <div class="navigation-arrows">
+            <div id="prev-button" class="nav-arrow nav-prev">&#10094;</div>
+            <div id="next-button" class="nav-arrow nav-next">&#10095;</div>
+        </div>
+    </div>
+    
+    <div class="metadata-panel" id="metadata-panel">
+        <div class="loading-indicator">
+            <div class="spinner"></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // State variables
+        let currentPath = '{{ path }}';
+        let currentDirectory = '';
+        let directoryContents = [];
+        let currentIndex = -1;
+        let zoomLevel = 1.0;
+        
+        // DOM elements
+        const imageContainer = document.getElementById('image-container');
+        const metadataPanel = document.getElementById('metadata-panel');
+        const backButton = document.getElementById('back-button');
+        const prevButton = document.getElementById('prev-button');
+        const nextButton = document.getElementById('next-button');
+        const downloadButton = document.getElementById('download-button');
+        const zoomInButton = document.getElementById('zoom-in-button');
+        const zoomOutButton = document.getElementById('zoom-out-button');
+        const zoomResetButton = document.getElementById('zoom-reset-button');
+        
+        // Initialize
+        if (currentPath) {
+            loadImage(currentPath);
+            loadMetadata(currentPath);
+            loadDirectoryContents();
+        } else {
+            showError('No image path specified');
+        }
+        
+        // Event listeners
+        backButton.addEventListener('click', function() {
+            window.location.href = '/photos/browser?path=' + encodeURIComponent(currentDirectory);
+        });
+        
+        prevButton.addEventListener('click', function() {
+            navigateToImage(-1);
+        });
+        
+        nextButton.addEventListener('click', function() {
+            navigateToImage(1);
+        });
+        
+        downloadButton.addEventListener('click', function() {
+            if (currentPath) {
+                window.location.href = '/photos/api/download?path=' + encodeURIComponent(currentPath);
+            }
+        });
+        
+        zoomInButton.addEventListener('click', function() {
+            updateZoom(0.1);
+        });
+        
+        zoomOutButton.addEventListener('click', function() {
+            updateZoom(-0.1);
+        });
+        
+        zoomResetButton.addEventListener('click', function() {
+            resetZoom();
+        });
+        
+        // Keyboard navigation
+        document.addEventListener('keydown', function(e) {
+            switch(e.key) {
+                case 'ArrowLeft':
+                    navigateToImage(-1);
+                    break;
+                case 'ArrowRight':
+                    navigateToImage(1);
+                    break;
+                case '+':
+                case '=':
+                    updateZoom(0.1);
+                    break;
+                case '-':
+                    updateZoom(-0.1);
+                    break;
+                case '0':
+                    resetZoom();
+                    break;
+                case 'Escape':
+                    window.location.href = '/photos/browser?path=' + encodeURIComponent(currentDirectory);
+                    break;
+            }
+        });
+        
+        // Functions
+        function loadImage(path) {
+            showImageLoading();
+            
+            const img = new Image();
+            img.onload = function() {
+                // Clear the container
+                imageContainer.innerHTML = '';
+                
+                // Add the loaded image
+                imageContainer.appendChild(img);
+                
+                // Reset zoom level
+                resetZoom();
+            };
+            
+            img.onerror = function() {
+                showImageError('Failed to load image');
+            };
+            
+            img.src = '/photos/api/image?path=' + encodeURIComponent(path);
+        }
+        
+        function loadMetadata(path) {
+            showMetadataLoading();
+            
+            fetch('/photos/api/metadata?path=' + encodeURIComponent(path))
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        renderMetadata(data.metadata);
+                    } else {
+                        showMetadataError('Failed to load metadata');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading metadata:', error);
+                    showMetadataError('Error loading metadata');
+                });
+        }
+        
+        function loadDirectoryContents() {
+            // Extract the directory path from the current image path
+            currentDirectory = currentPath.substring(0, currentPath.lastIndexOf('/'));
+            
+            fetch('/photos/api/browse?path=' + encodeURIComponent(currentDirectory))
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Filter to only include images
+                        directoryContents = data.contents.filter(item => item.is_image);
+                        
+                        // Find the current image index
+                        currentIndex = directoryContents.findIndex(item => item.path === currentPath);
+                        
+                        // Update navigation buttons
+                        updateNavigation();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading directory contents:', error);
+                });
+        }
+        
+        function navigateToImage(direction) {
+            if (directoryContents.length === 0 || currentIndex === -1) return;
+            
+            // Calculate the new index with wrapping
+            let newIndex = currentIndex + direction;
+            if (newIndex < 0) newIndex = directoryContents.length - 1;
+            if (newIndex >= directoryContents.length) newIndex = 0;
+            
+            // Update the current index and path
+            currentIndex = newIndex;
+            currentPath = directoryContents[currentIndex].path;
+            
+            // Load the new image and metadata
+            loadImage(currentPath);
+            loadMetadata(currentPath);
+            
+            // Update navigation buttons
+            updateNavigation();
+            
+            // Update URL without reloading the page
+            history.replaceState(null, '', '/photos/viewer?path=' + encodeURIComponent(currentPath));
+        }
+        
+        function updateNavigation() {
+            // Enable/disable navigation buttons based on current position
+            prevButton.style.display = directoryContents.length > 1 ? 'flex' : 'none';
+            nextButton.style.display = directoryContents.length > 1 ? 'flex' : 'none';
+        }
+        
+        function updateZoom(delta) {
+            const img = imageContainer.querySelector('img');
+            if (!img) return;
+            
+            // Update zoom level with limits
+            zoomLevel = Math.max(0.1, Math.min(3.0, zoomLevel + delta));
+            
+            // Apply zoom transformation
+            img.style.transform = `scale(${zoomLevel})`;
+            
+            // Update zoom button text
+            zoomResetButton.textContent = `${Math.round(zoomLevel * 100)}%`;
+        }
+        
+        function resetZoom() {
+            zoomLevel = 1.0;
+            const img = imageContainer.querySelector('img');
+            if (img) {
+                img.style.transform = 'scale(1)';
+            }
+            zoomResetButton.textContent = '100%';
+        }
+        
+        function renderMetadata(metadata) {
+            metadataPanel.innerHTML = '';
+            
+            // File Info Section
+            const fileInfoSection = document.createElement('div');
+            fileInfoSection.className = 'metadata-section';
+            fileInfoSection.innerHTML = `
+                <h3 class="metadata-heading">File Information</h3>
+                <ul class="metadata-list">
+                    <li class="metadata-item">
+                        <div class="metadata-label">Name</div>
+                        <div class="metadata-value">${metadata.filename}</div>
+                    </li>
+                    <li class="metadata-item">
+                        <div class="metadata-label">Size</div>
+                        <div class="metadata-value">${formatFileSize(metadata.size)}</div>
+                    </li>
+                    <li class="metadata-item">
+                        <div class="metadata-label">Modified</div>
+                        <div class="metadata-value">${formatDate(metadata.modified)}</div>
+                    </li>
+                </ul>
+            `;
+            metadataPanel.appendChild(fileInfoSection);
+            
+            // Image Info Section
+            if (metadata.dimensions) {
+                const imageInfoSection = document.createElement('div');
+                imageInfoSection.className = 'metadata-section';
+                imageInfoSection.innerHTML = `
+                    <h3 class="metadata-heading">Image Information</h3>
+                    <ul class="metadata-list">
+                        <li class="metadata-item">
+                            <div class="metadata-label">Dimensions</div>
+                            <div class="metadata-value">${metadata.dimensions[0]} × ${metadata.dimensions[1]}</div>
+                        </li>
+                        <li class="metadata-item">
+                            <div class="metadata-label">Format</div>
+                            <div class="metadata-value">${metadata.format || 'Unknown'}</div>
+                        </li>
+                        <li class="metadata-item">
+                            <div class="metadata-label">Color Mode</div>
+                            <div class="metadata-value">${metadata.mode || 'Unknown'}</div>
+                        </li>
+                    </ul>
+                `;
+                metadataPanel.appendChild(imageInfoSection);
+            }
+            
+            // EXIF Data Section
+            if (metadata.exif && Object.keys(metadata.exif).length > 0) {
+                const exifSection = document.createElement('div');
+                exifSection.className = 'metadata-section';
+                
+                let exifHtml = `<h3 class="metadata-heading">EXIF Metadata</h3><ul class="metadata-list">`;
+                
+                // Display some common EXIF fields first
+                const priorityFields = [
+                    'EXIF DateTimeOriginal',
+                    'EXIF Make',
+                    'EXIF Model',
+                    'EXIF ExposureTime',
+                    'EXIF FNumber',
+                    'EXIF ISOSpeedRatings',
+                    'EXIF FocalLength',
+                    'EXIF Flash'
+                ];
+                
+                // Add priority fields if they exist
+                for (const field of priorityFields) {
+                    if (metadata.exif[field]) {
+                        const label = field.replace('EXIF ', '').replace(/([A-Z])/g, ' $1').trim();
+                        exifHtml += `
+                            <li class="metadata-item">
+                                <div class="metadata-label">${label}</div>
+                                <div class="metadata-value">${metadata.exif[field]}</div>
+                            </li>
+                        `;
+                    }
+                }
+                
+                // Add other fields
+                for (const [field, value] of Object.entries(metadata.exif)) {
+                    if (!priorityFields.includes(field)) {
+                        const label = field.replace('EXIF ', '').replace(/([A-Z])/g, ' $1').trim();
+                        exifHtml += `
+                            <li class="metadata-item">
+                                <div class="metadata-label">${label}</div>
+                                <div class="metadata-value">${value}</div>
+                            </li>
+                        `;
+                    }
+                }
+                
+                exifHtml += `</ul>`;
+                exifSection.innerHTML = exifHtml;
+                metadataPanel.appendChild(exifSection);
+            }
+        }
+        
+        function showImageLoading() {
+            imageContainer.innerHTML = `
+                <div class="loading-indicator">
+                    <div class="spinner"></div>
+                </div>
+            `;
+        }
+        
+        function showImageError(message) {
+            imageContainer.innerHTML = `
+                <div class="error-container">
+                    <h3>Error</h3>
+                    <p>${message}</p>
+                </div>
+            `;
+        }
+        
+        function showMetadataLoading() {
+            metadataPanel.innerHTML = `
+                <div class="loading-indicator">
+                    <div class="spinner"></div>
+                </div>
+            `;
+        }
+        
+        function showMetadataError(message) {
+            metadataPanel.innerHTML = `
+                <div class="error-container">
+                    <h3>Error</h3>
+                    <p>${message}</p>
+                </div>
+            `;
+        }
+        
+        // Utility functions
+        function formatFileSize(bytes) {
+            if (bytes === null || bytes === undefined) return 'Unknown';
+            
+            const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+            let size = bytes;
+            let unitIndex = 0;
+            
+            while (size >= 1024 && unitIndex < units.length - 1) {
+                size /= 1024;
+                unitIndex++;
+            }
+            
+            return `${size.toFixed(1)} ${units[unitIndex]}`;
+        }
+        
+        function formatDate(dateString) {
+            if (!dateString) return 'Unknown';
+            
+            const date = new Date(dateString);
+            return date.toLocaleString();
+        }
+    });
+</script>
+{% endblock %}

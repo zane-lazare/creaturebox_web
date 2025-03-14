@@ -1,0 +1,655 @@
+{% extends 'base.html' %}
+
+{% block styles %}
+<style>
+    .photo-browser {
+        display: flex;
+        height: calc(100vh - 180px);
+        min-height: 500px;
+        background-color: var(--card-bg);
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    
+    .directory-sidebar {
+        width: 250px;
+        background-color: var(--sidebar-bg);
+        border-right: 1px solid var(--border-color);
+        overflow-y: auto;
+        padding: 15px 0;
+    }
+    
+    .sidebar-title {
+        padding: 0 15px 10px;
+        margin: 0;
+        font-size: 1.1rem;
+        border-bottom: 1px solid var(--border-color);
+    }
+    
+    .directory-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    
+    .directory-item {
+        padding: 10px 15px;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+    
+    .directory-item:hover, .directory-item.active {
+        background-color: var(--hover-bg);
+    }
+    
+    .directory-item-name {
+        font-weight: 500;
+        margin-bottom: 2px;
+    }
+    
+    .directory-item-info {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+    }
+    
+    .main-content-area {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+    
+    .breadcrumb-nav {
+        padding: 15px;
+        background-color: var(--breadcrumb-bg);
+        border-bottom: 1px solid var(--border-color);
+    }
+    
+    .breadcrumb {
+        display: flex;
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        flex-wrap: wrap;
+    }
+    
+    .breadcrumb-item {
+        display: flex;
+        align-items: center;
+    }
+    
+    .breadcrumb-item:not(:first-child)::before {
+        content: "/";
+        margin: 0 8px;
+        color: var(--text-muted);
+    }
+    
+    .breadcrumb-link {
+        color: var(--primary-color);
+        text-decoration: none;
+    }
+    
+    .breadcrumb-current {
+        font-weight: 500;
+    }
+    
+    .content-display {
+        flex: 1;
+        overflow-y: auto;
+        padding: 20px;
+    }
+    
+    .directory-controls {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+    
+    .view-toggle {
+        display: flex;
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        overflow: hidden;
+    }
+    
+    .view-toggle-button {
+        background: none;
+        border: none;
+        padding: 8px 12px;
+        cursor: pointer;
+        color: var(--text-color);
+    }
+    
+    .view-toggle-button.active {
+        background-color: var(--primary-color);
+        color: white;
+    }
+    
+    .sorting-controls {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .sort-select {
+        padding: 8px;
+        border-radius: 4px;
+        border: 1px solid var(--border-color);
+        background-color: var(--input-bg);
+        color: var(--text-color);
+    }
+    
+    .grid-view {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        gap: 15px;
+    }
+    
+    .list-view {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+    
+    .item-card {
+        background-color: var(--item-bg);
+        border-radius: 6px;
+        overflow: hidden;
+        transition: transform 0.2s, box-shadow 0.2s;
+        cursor: pointer;
+    }
+    
+    .grid-view .item-card {
+        display: flex;
+        flex-direction: column;
+        height: 180px;
+    }
+    
+    .list-view .item-card {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        padding: 8px;
+    }
+    
+    .item-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    }
+    
+    .item-thumbnail {
+        background-color: var(--thumbnail-bg);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        overflow: hidden;
+    }
+    
+    .grid-view .item-thumbnail {
+        height: 120px;
+    }
+    
+    .list-view .item-thumbnail {
+        height: 40px;
+        width: 40px;
+        flex-shrink: 0;
+    }
+    
+    .item-thumbnail img {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+    }
+    
+    .item-icon {
+        font-size: 2rem;
+        color: var(--icon-color);
+    }
+    
+    .list-view .item-icon {
+        font-size: 1.2rem;
+    }
+    
+    .item-details {
+        padding: 8px;
+        overflow: hidden;
+    }
+    
+    .grid-view .item-details {
+        flex: 1;
+    }
+    
+    .list-view .item-details {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding-left: 15px;
+    }
+    
+    .item-name {
+        font-weight: 500;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    
+    .grid-view .item-name {
+        font-size: 0.9rem;
+        margin-bottom: 4px;
+    }
+    
+    .item-info {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+    }
+    
+    .grid-view .item-info {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    
+    .loading-indicator {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 150px;
+        width: 100%;
+    }
+    
+    .spinner {
+        width: 40px;
+        height: 40px;
+        border: 4px solid rgba(0, 0, 0, 0.1);
+        border-radius: 50%;
+        border-top-color: var(--primary-color);
+        animation: spin 1s ease-in-out infinite;
+    }
+    
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+    
+    .empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 200px;
+        width: 100%;
+        text-align: center;
+        color: var(--text-muted);
+    }
+    
+    .empty-icon {
+        font-size: 3rem;
+        margin-bottom: 15px;
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .photo-browser {
+            flex-direction: column;
+            height: auto;
+        }
+        
+        .directory-sidebar {
+            width: 100%;
+            border-right: none;
+            border-bottom: 1px solid var(--border-color);
+            max-height: 200px;
+        }
+        
+        .grid-view {
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="photo-browser">
+    <div class="directory-sidebar">
+        <h3 class="sidebar-title">Root Directories</h3>
+        <ul class="directory-list" id="root-directories">
+            <li class="directory-item loading">
+                <div class="loading-indicator">
+                    <div class="spinner"></div>
+                </div>
+            </li>
+        </ul>
+    </div>
+    
+    <div class="main-content-area">
+        <div class="breadcrumb-nav">
+            <ul class="breadcrumb" id="path-breadcrumb">
+                <li class="breadcrumb-item">
+                    <a href="#" class="breadcrumb-link" data-path="">Root</a>
+                </li>
+            </ul>
+        </div>
+        
+        <div class="content-display">
+            <div class="directory-controls">
+                <div class="view-toggle">
+                    <button class="view-toggle-button active" data-view="grid">Grid</button>
+                    <button class="view-toggle-button" data-view="list">List</button>
+                </div>
+                
+                <div class="sorting-controls">
+                    <label for="sort-select">Sort by:</label>
+                    <select id="sort-select" class="sort-select">
+                        <option value="name">Name</option>
+                        <option value="date">Date</option>
+                        <option value="size">Size</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div id="content-container" class="grid-view">
+                <div class="loading-indicator">
+                    <div class="spinner"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // State variables
+        let currentPath = '';
+        let viewMode = 'grid';
+        let sortMode = 'name';
+        
+        // DOM elements
+        const rootDirectoriesList = document.getElementById('root-directories');
+        const pathBreadcrumb = document.getElementById('path-breadcrumb');
+        const contentContainer = document.getElementById('content-container');
+        const viewToggleButtons = document.querySelectorAll('.view-toggle-button');
+        const sortSelect = document.getElementById('sort-select');
+        
+        // Initialize the browser
+        loadRootDirectories();
+        
+        // Event listeners
+        viewToggleButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                viewToggleButtons.forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                viewMode = this.dataset.view;
+                updateView();
+            });
+        });
+        
+        sortSelect.addEventListener('change', function() {
+            sortMode = this.value;
+            browsePath(currentPath);
+        });
+        
+        // Functions
+        function loadRootDirectories() {
+            showLoading(rootDirectoriesList);
+            
+            fetch('/photos/api/directories')
+                .then(response => response.json())
+                .then(data => {
+                    rootDirectoriesList.innerHTML = '';
+                    
+                    if (data.success && data.directories.length > 0) {
+                        data.directories.forEach(dir => {
+                            const item = document.createElement('li');
+                            item.className = 'directory-item';
+                            item.dataset.path = dir.path;
+                            item.innerHTML = `
+                                <div class="directory-item-name">${dir.name}</div>
+                                <div class="directory-item-info">
+                                    ${dir.item_count !== null ? `${dir.item_count} items` : 'Unknown'}
+                                </div>
+                            `;
+                            
+                            item.addEventListener('click', function() {
+                                document.querySelectorAll('.directory-item').forEach(el => {
+                                    el.classList.remove('active');
+                                });
+                                this.classList.add('active');
+                                browsePath(dir.path);
+                            });
+                            
+                            rootDirectoriesList.appendChild(item);
+                        });
+                        
+                        // Load the first directory by default
+                        if (data.directories.length > 0) {
+                            rootDirectoriesList.querySelector('.directory-item').click();
+                        }
+                    } else {
+                        rootDirectoriesList.innerHTML = `
+                            <li class="directory-item empty">
+                                <div class="directory-item-name">No directories found</div>
+                                <div class="directory-item-info">Check your configuration</div>
+                            </li>
+                        `;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading directories:', error);
+                    rootDirectoriesList.innerHTML = `
+                        <li class="directory-item error">
+                            <div class="directory-item-name">Error loading directories</div>
+                            <div class="directory-item-info">Check the console for details</div>
+                        </li>
+                    `;
+                });
+        }
+        
+        function browsePath(path) {
+            currentPath = path;
+            updateBreadcrumb();
+            showLoading(contentContainer);
+            
+            fetch(`/photos/api/browse?path=${encodeURIComponent(path)}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        renderContents(data.contents);
+                    } else {
+                        showError('Failed to load directory contents');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error browsing directory:', error);
+                    showError('Error loading directory contents');
+                });
+        }
+        
+        function renderContents(contents) {
+            // Sort contents based on current sort mode
+            contents = sortContents(contents, sortMode);
+            
+            contentContainer.innerHTML = '';
+            
+            if (contents.length === 0) {
+                showEmpty();
+                return;
+            }
+            
+            // Update the container class based on view mode
+            contentContainer.className = viewMode === 'grid' ? 'grid-view' : 'list-view';
+            
+            contents.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'item-card';
+                
+                if (item.is_dir) {
+                    card.addEventListener('click', () => browsePath(item.path));
+                    card.innerHTML = `
+                        <div class="item-thumbnail">
+                            <div class="item-icon">📁</div>
+                        </div>
+                        <div class="item-details">
+                            <div class="item-name">${item.name}</div>
+                            <div class="item-info">
+                                ${item.item_count !== null ? `${item.item_count} items` : ''}
+                                ${item.modified ? `· ${formatDate(item.modified)}` : ''}
+                            </div>
+                        </div>
+                    `;
+                } else if (item.is_image) {
+                    card.addEventListener('click', () => openViewer(item.path));
+                    card.innerHTML = `
+                        <div class="item-thumbnail">
+                            <img src="/photos/api/thumbnail?path=${encodeURIComponent(item.path)}&size=medium" 
+                                 alt="${item.name}" loading="lazy">
+                        </div>
+                        <div class="item-details">
+                            <div class="item-name">${item.name}</div>
+                            <div class="item-info">
+                                ${formatFileSize(item.size)}
+                                ${item.modified ? `· ${formatDate(item.modified)}` : ''}
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    card.innerHTML = `
+                        <div class="item-thumbnail">
+                            <div class="item-icon">📄</div>
+                        </div>
+                        <div class="item-details">
+                            <div class="item-name">${item.name}</div>
+                            <div class="item-info">
+                                ${formatFileSize(item.size)}
+                                ${item.modified ? `· ${formatDate(item.modified)}` : ''}
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                contentContainer.appendChild(card);
+            });
+        }
+        
+        function updateBreadcrumb() {
+            // Split the path into components
+            const parts = currentPath.split('/').filter(Boolean);
+            const basePath = currentPath.startsWith('/') ? '/' : '';
+            
+            // Create the breadcrumb HTML
+            pathBreadcrumb.innerHTML = `
+                <li class="breadcrumb-item">
+                    <a href="#" class="breadcrumb-link" data-path="">Root</a>
+                </li>
+            `;
+            
+            let currentPathBuildup = basePath;
+            
+            parts.forEach((part, index) => {
+                currentPathBuildup += (currentPathBuildup.endsWith('/') ? '' : '/') + part;
+                const isLast = index === parts.length - 1;
+                
+                const item = document.createElement('li');
+                item.className = 'breadcrumb-item';
+                
+                if (isLast) {
+                    item.innerHTML = `<span class="breadcrumb-current">${part}</span>`;
+                } else {
+                    item.innerHTML = `<a href="#" class="breadcrumb-link" data-path="${currentPathBuildup}">${part}</a>`;
+                }
+                
+                pathBreadcrumb.appendChild(item);
+            });
+            
+            // Add click handlers to breadcrumb links
+            document.querySelectorAll('.breadcrumb-link').forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    browsePath(this.dataset.path);
+                });
+            });
+        }
+        
+        function updateView() {
+            contentContainer.className = viewMode === 'grid' ? 'grid-view' : 'list-view';
+        }
+        
+        function sortContents(contents, sortMode) {
+            return [...contents].sort((a, b) => {
+                // Directories always come first
+                if (a.is_dir !== b.is_dir) {
+                    return a.is_dir ? -1 : 1;
+                }
+                
+                // Then sort by the selected mode
+                switch (sortMode) {
+                    case 'name':
+                        return a.name.localeCompare(b.name);
+                    case 'date':
+                        return new Date(b.modified || 0) - new Date(a.modified || 0);
+                    case 'size':
+                        return (b.size || 0) - (a.size || 0);
+                    default:
+                        return 0;
+                }
+            });
+        }
+        
+        function openViewer(path) {
+            window.location.href = `/photos/viewer?path=${encodeURIComponent(path)}`;
+        }
+        
+        function showLoading(container) {
+            container.innerHTML = `
+                <div class="loading-indicator">
+                    <div class="spinner"></div>
+                </div>
+            `;
+        }
+        
+        function showEmpty() {
+            contentContainer.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-icon">📂</div>
+                    <h3>This folder is empty</h3>
+                    <p>There are no files or folders to display.</p>
+                </div>
+            `;
+        }
+        
+        function showError(message) {
+            contentContainer.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-icon">⚠️</div>
+                    <h3>Error</h3>
+                    <p>${message}</p>
+                </div>
+            `;
+        }
+        
+        // Utility functions
+        function formatFileSize(bytes) {
+            if (bytes === null || bytes === undefined) return '';
+            
+            const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+            let size = bytes;
+            let unitIndex = 0;
+            
+            while (size >= 1024 && unitIndex < units.length - 1) {
+                size /= 1024;
+                unitIndex++;
+            }
+            
+            return `${size.toFixed(1)} ${units[unitIndex]}`;
+        }
+        
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString();
+        }
+    });
+</script>
+{% endblock %}

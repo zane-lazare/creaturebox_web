@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+
+{% block styles %}
+<style>
+    .photo-module-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 20px;
+        margin-top: 20px;
+    }
+    
+    .module-card {
+        background-color: var(--card-bg);
+        border-radius: 8px;
+        padding: 20px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    
+    .module-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    }
+    
+    .module-card h2 {
+        color: var(--primary-color);
+        margin-top: 0;
+        font-size: 1.4rem;
+    }
+    
+    .module-card p {
+        margin-bottom: 20px;
+        color: var(--text-color);
+    }
+    
+    .module-card .card-icon {
+        font-size: 2.5rem;
+        margin-bottom: 15px;
+        color: var(--accent-color);
+    }
+    
+    .card-button {
+        display: inline-block;
+        background-color: var(--primary-color);
+        color: white;
+        padding: 8px 16px;
+        border-radius: 4px;
+        text-decoration: none;
+        font-weight: 500;
+        transition: background-color 0.2s ease;
+    }
+    
+    .card-button:hover {
+        background-color: var(--primary-color-dark);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="section-intro">
+    <p>The Photo Module allows you to browse, view, and manage images captured by your Creaturebox/Mothbox device.</p>
+</div>
+
+<div class="photo-module-cards">
+    <div class="module-card">
+        <div class="card-icon">📂</div>
+        <h2>Photo Browser</h2>
+        <p>Browse through directories and view image collections captured by your device.</p>
+        <a href="{{ url_for('photos.browser') }}" class="card-button">Open Browser</a>
+    </div>
+    
+    <div class="module-card">
+        <div class="card-icon">🔍</div>
+        <h2>Recent Images</h2>
+        <p>View the most recently captured images from your device.</p>
+        <a href="#" class="card-button">View Recent</a>
+    </div>
+    
+    <div class="module-card">
+        <div class="card-icon">⭐</div>
+        <h2>Favorites</h2>
+        <p>Access your favorite images that you've marked for quick reference.</p>
+        <a href="#" class="card-button">View Favorites</a>
+    </div>
+    
+    <div class="module-card">
+        <div class="card-icon">📊</div>
+        <h2>Statistics</h2>
+        <p>View capture statistics and metrics about your photo collection.</p>
+        <a href="#" class="card-button">View Stats</a>
+    </div>
+</div>
+{% endblock %}

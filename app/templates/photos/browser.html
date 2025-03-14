@@ -401,38 +401,45 @@
                 .then(data => {
                     rootDirectoriesList.innerHTML = '';
                     
-                    if (data.success && data.directories.length > 0) {
-                        data.directories.forEach(dir => {
-                            const item = document.createElement('li');
-                            item.className = 'directory-item';
-                            item.dataset.path = dir.path;
-                            item.innerHTML = `
-                                <div class="directory-item-name">${dir.name}</div>
-                                <div class="directory-item-info">
-                                    ${dir.item_count !== null ? `${dir.item_count} items` : 'Unknown'}
-                                </div>
-                            `;
-                            
-                            item.addEventListener('click', function() {
-                                document.querySelectorAll('.directory-item').forEach(el => {
-                                    el.classList.remove('active');
+                    if (data.success) {
+                        if (data.directories && data.directories.length > 0) {
+                            data.directories.forEach(dir => {
+                                const item = document.createElement('li');
+                                item.className = 'directory-item';
+                                item.dataset.path = dir.path;
+                                item.innerHTML = `
+                                    <div class="directory-item-name">${dir.name}</div>
+                                    <div class="directory-item-info">
+                                        ${dir.item_count !== null ? `${dir.item_count} items` : 'Unknown'}
+                                    </div>
+                                `;
+                                
+                                item.addEventListener('click', function() {
+                                    document.querySelectorAll('.directory-item').forEach(el => {
+                                        el.classList.remove('active');
+                                    });
+                                    this.classList.add('active');
+                                    browsePath(dir.path);
                                 });
-                                this.classList.add('active');
-                                browsePath(dir.path);
+                                
+                                rootDirectoriesList.appendChild(item);
                             });
                             
-                            rootDirectoriesList.appendChild(item);
-                        });
-                        
-                        // Load the first directory by default
-                        if (data.directories.length > 0) {
+                            // Load the first directory by default
                             rootDirectoriesList.querySelector('.directory-item').click();
+                        } else {
+                            rootDirectoriesList.innerHTML = `
+                                <li class="directory-item empty">
+                                    <div class="directory-item-name">No image directories found</div>
+                                    <div class="directory-item-info">Please configure your image directories</div>
+                                </li>
+                            `;
                         }
                     } else {
                         rootDirectoriesList.innerHTML = `
                             <li class="directory-item empty">
-                                <div class="directory-item-name">No directories found</div>
-                                <div class="directory-item-info">Check your configuration</div>
+                                <div class="directory-item-name">Error loading directories</div>
+                                <div class="directory-item-info">Check the console for details</div>
                             </li>
                         `;
                     }

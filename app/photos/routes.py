@@ -19,17 +19,30 @@ from app.photos.utils import (
 
 # Configuration
 # These will eventually move to a settings file
+
+# Determine application base directory
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+
+# Define photo directories with fallbacks
+APP_PHOTOS_DIR = os.path.join(BASE_DIR, 'instance', 'photos')  # App's photos directory
+
+# Create app photos directory if it doesn't exist
+try:
+    os.makedirs(APP_PHOTOS_DIR, exist_ok=True)
+    os.chmod(APP_PHOTOS_DIR, 0o755)  # Ensure directory is readable
+except Exception as e:
+    print(f"Error creating photos directory: {str(e)}")
+
 PHOTO_ROOT_DIRS = [
     '/home/pi/creaturebox/images',  # Default Creaturebox images directory
     '/home/pi/mothbox/images',      # Default Mothbox images directory
+    APP_PHOTOS_DIR                  # App's photos directory
 ]
 
 # For testing on non-Pi systems
 if not os.path.exists('/home/pi'):
-    PHOTO_ROOT_DIRS = [
-        os.path.join(os.path.expanduser('~'), 'Pictures'),  # User's Pictures directory
-        os.path.join(current_app.instance_path, 'photos') if 'current_app' in locals() else 'instance/photos',  # App's photos directory
-    ]
+    # Add user Pictures directory for testing
+    PHOTO_ROOT_DIRS.append(os.path.join(os.path.expanduser('~'), 'Pictures'))
 
 @bp.route('/')
 @login_required

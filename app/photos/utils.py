@@ -36,20 +36,51 @@ logger = logging.getLogger(__name__)
 
 # Constants
 IMAGE_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff', '.tif'}
-THUMBNAIL_DIR = os.path.join('instance', 'thumbnails')
+
+# Determine the base directory for the application
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+
+# Define thumbnail directory with absolute path
+THUMBNAIL_DIR = os.path.join(BASE_DIR, 'instance', 'thumbnails')
 THUMBNAIL_QUALITY = 85
 
 def ensure_thumbnail_dir():
     """Ensure the thumbnail directory exists."""
-    os.makedirs(THUMBNAIL_DIR, exist_ok=True)
-    
-    # Create subdirectories for different sizes
-    os.makedirs(os.path.join(THUMBNAIL_DIR, 'small'), exist_ok=True)
-    os.makedirs(os.path.join(THUMBNAIL_DIR, 'medium'), exist_ok=True)
-    os.makedirs(os.path.join(THUMBNAIL_DIR, 'large'), exist_ok=True)
+    try:
+        # Create main thumbnail directory
+        os.makedirs(THUMBNAIL_DIR, exist_ok=True)
+        
+        # Create subdirectories for different sizes
+        os.makedirs(os.path.join(THUMBNAIL_DIR, 'small'), exist_ok=True)
+        os.makedirs(os.path.join(THUMBNAIL_DIR, 'medium'), exist_ok=True)
+        os.makedirs(os.path.join(THUMBNAIL_DIR, 'large'), exist_ok=True)
+        
+        # Set appropriate permissions
+        os.chmod(THUMBNAIL_DIR, 0o755)
+        os.chmod(os.path.join(THUMBNAIL_DIR, 'small'), 0o755)
+        os.chmod(os.path.join(THUMBNAIL_DIR, 'medium'), 0o755)
+        os.chmod(os.path.join(THUMBNAIL_DIR, 'large'), 0o755)
+        
+        logger.info(f"Thumbnail directories created at {THUMBNAIL_DIR}")
+        return True
+    except Exception as e:
+        logger.error(f"Error creating thumbnail directories: {str(e)}")
+        # Fallback to a temporary directory if we can't create the intended one
+        global THUMBNAIL_DIR
+        THUMBNAIL_DIR = os.path.join('/tmp', 'creaturebox_thumbnails')
+        os.makedirs(THUMBNAIL_DIR, exist_ok=True)
+        os.makedirs(os.path.join(THUMBNAIL_DIR, 'small'), exist_ok=True)
+        os.makedirs(os.path.join(THUMBNAIL_DIR, 'medium'), exist_ok=True)
+        os.makedirs(os.path.join(THUMBNAIL_DIR, 'large'), exist_ok=True)
+        logger.warning(f"Using fallback thumbnail directory: {THUMBNAIL_DIR}")
+        return False
 
 # Create thumbnail directories on module load
-ensure_thumbnail_dir()
+try:
+    ensure_thumbnail_dir()
+except Exception as e:
+    logger.error(f"Failed to create thumbnail directories: {str(e)}")
+    # Will use a fallback location when thumbnails are requested
 
 def is_image_file(filename: str) -> bool:
     """Check if a file is an image based on its extension."""

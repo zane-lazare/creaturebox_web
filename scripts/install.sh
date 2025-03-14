@@ -190,7 +190,7 @@ WorkingDirectory=$INSTALL_DIR
 ExecStart=$INSTALL_DIR/venv/bin/gunicorn -b 127.0.0.1:8000 'app:create_app()'
 Restart=always
 RestartSec=5
-Environment="PATH=$INSTALL_DIR/venv/bin"
+Environment="PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$INSTALL_DIR/venv/bin"
 EnvironmentFile=$INSTALL_DIR/.env
 # Allow access to hardware
 SupplementaryGroups=video gpio

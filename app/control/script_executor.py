@@ -81,7 +81,7 @@ def execute_script(script_name, parameters=None, working_dir=None, timeout=None)
     
     # Add sudo if required
     if script_info.get('requires_sudo', False):
-        command.append("sudo")
+        command.append("/usr/bin/sudo")
         
     # Add python interpreter if it's a Python script
     if script_path.endswith('.py'):

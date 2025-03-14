@@ -78,6 +78,14 @@
     </div>
 
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script>
+    // Initialize dropdown display to be hidden
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.dropdown-menu').forEach(function(menu) {
+            menu.style.display = 'none';
+        });
+    });
+    </script>
     {% block scripts %}{% endblock %}
 </body>
 </html>

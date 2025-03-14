@@ -14,36 +14,17 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
   
-  // Handle dropdowns
-  const dropdowns = document.querySelectorAll('.dropdown');
+  // Close all dropdowns initially
+  document.querySelectorAll('.dropdown-menu').forEach(menu => {
+    menu.style.display = 'none';
+  });
   
-  dropdowns.forEach(dropdown => {
-    if (window.innerWidth <= 768) {
-      // Mobile dropdown behavior
-      const link = dropdown.querySelector('a');
-      link.addEventListener('click', function(e) {
-        e.preventDefault();
-        const menu = this.nextElementSibling;
-        if (menu) {
-          menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
-        }
-      });
-    } else {
-      // Desktop dropdown behavior
-      dropdown.addEventListener('mouseenter', function() {
-        const menu = this.querySelector('.dropdown-menu');
-        if (menu) {
-          menu.style.display = 'block';
-        }
-      });
-      
-      dropdown.addEventListener('mouseleave', function() {
-        const menu = this.querySelector('.dropdown-menu');
-        if (menu) {
-          menu.style.display = 'none';
-        }
-      });
-    }
+  // Setup dropdown handlers
+  setupDropdowns();
+  
+  // Update dropdown behavior on window resize
+  window.addEventListener('resize', function() {
+    setupDropdowns();
   });
   
   // Flash message close button
@@ -76,6 +57,67 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 /**
+ * Setup dropdown behavior based on screen size
+ */
+function setupDropdowns() {
+  const isMobile = window.innerWidth <= 768;
+  const dropdowns = document.querySelectorAll('.dropdown');
+  
+  // First, remove all existing event listeners (if possible)
+  dropdowns.forEach(dropdown => {
+    const dropdownLink = dropdown.querySelector('a');
+    if (dropdownLink) {
+      // Clone and replace to remove event listeners
+      const newLink = dropdownLink.cloneNode(true);
+      dropdownLink.parentNode.replaceChild(newLink, dropdownLink);
+    }
+  });
+  
+  // Setup appropriate event listeners based on screen size
+  dropdowns.forEach(dropdown => {
+    const dropdownLink = dropdown.querySelector('a');
+    const dropdownMenu = dropdown.querySelector('.dropdown-menu');
+    
+    if (!dropdownLink || !dropdownMenu) return;
+    
+    if (isMobile) {
+      // Mobile: toggle on click
+      dropdownLink.addEventListener('click', function(e) {
+        e.preventDefault();
+        
+        // Close all other dropdowns
+        document.querySelectorAll('.dropdown-menu').forEach(menu => {
+          if (menu !== dropdownMenu) {
+            menu.style.display = 'none';
+          }
+        });
+        
+        // Toggle this dropdown
+        dropdownMenu.style.display = dropdownMenu.style.display === 'block' ? 'none' : 'block';
+      });
+    } else {
+      // Desktop: show on hover
+      dropdown.addEventListener('mouseenter', function() {
+        dropdownMenu.style.display = 'block';
+      });
+      
+      dropdown.addEventListener('mouseleave', function() {
+        dropdownMenu.style.display = 'none';
+      });
+    }
+  });
+  
+  // Close dropdowns when clicking outside
+  document.addEventListener('click', function(event) {
+    if (!event.target.closest('.dropdown')) {
+      document.querySelectorAll('.dropdown-menu').forEach(menu => {
+        menu.style.display = 'none';
+      });
+    }
+  });
+}
+
+/**
  * Simulate data for dashboard during development
  */
 function simulateDashboardData() {
@@ -85,8 +127,8 @@ function simulateDashboardData() {
   updateSystemInfo('Disk', Math.floor(Math.random() * 64) + ' GB');
   updateSystemInfo('Temperature', (Math.random() * 30 + 30).toFixed(1) + '°C');
   updateSystemInfo('Uptime', Math.floor(Math.random() * 30) + 'd ' + 
-                         Math.floor(Math.random() * 24) + 'h ' + 
-                         Math.floor(Math.random() * 60) + 'm');
+                       Math.floor(Math.random() * 24) + 'h ' + 
+                       Math.floor(Math.random() * 60) + 'm');
   updateSystemInfo('IP Address', '192.168.1.' + Math.floor(Math.random() * 255));
   
   // Storage meter simulation

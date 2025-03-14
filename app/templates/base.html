@@ -29,7 +29,15 @@
                             </ul>
                         </li>
                         <li><a href="{{ url_for('photos.index') }}">Photos</a></li>
-                        <li><a href="#control">Controls</a></li>
+                        <li class="dropdown">
+                            <a href="{{ url_for('control.index') }}">Control Panel</a>
+                            <ul class="dropdown-menu">
+                                <li><a href="{{ url_for('control.camera') }}">Camera</a></li>
+                                <li><a href="{{ url_for('control.light') }}">Lights</a></li>
+                                <li><a href="{{ url_for('control.system') }}">System</a></li>
+                                <li><a href="{{ url_for('control.power') }}">Power</a></li>
+                            </ul>
+                        </li>
                         <li><a href="#settings">Settings</a></li>
                         <li><a href="{{ url_for('auth.logout') }}">Logout</a></li>
                     </ul>

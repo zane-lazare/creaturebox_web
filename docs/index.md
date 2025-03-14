@@ -35,7 +35,7 @@ To get started with the Creaturebox Web Interface, follow these steps:
 This documentation is organized into several sections:
 
 - **[Installation](installation/index.md)**: How to install and set up the web interface
-- **[User Guide](user-guide/getting-started.md)**: Instructions for using the web interface
+- **[User Guide](user-guide/photos.md)**: Instructions for using the web interface
 - **[Developer Guide](developer-guide/architecture.md)**: Information for developers who want to extend or modify the web interface
 - **[Troubleshooting](troubleshooting.md)**: Solutions to common issues
 

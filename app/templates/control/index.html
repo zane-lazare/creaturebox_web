@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+
+{% block title %}Control Panel{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h1 class="mb-4">Control Panel</h1>
+            <p class="lead">Manage and control Creaturebox hardware and systems.</p>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0">Camera Control</h5>
+                </div>
+                <div class="card-body">
+                    <p>Control camera settings, take photos, and manage image capture.</p>
+                    <ul class="list-group">
+                        {% for script_name, script_info in scripts_by_category.camera.items() %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            {{ script_info.description }}
+                            <button class="btn btn-sm btn-primary execute-script" data-script="{{ script_name }}">Execute</button>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                <div class="card-footer">
+                    <a href="{{ url_for('control.camera') }}" class="btn btn-primary">Open Camera Controls</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0">Light Control</h5>
+                </div>
+                <div class="card-body">
+                    <p>Control attract lights, camera flash, and lighting configurations.</p>
+                    <ul class="list-group">
+                        {% for script_name, script_info in scripts_by_category.light.items() %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            {{ script_info.description }}
+                            <button class="btn btn-sm btn-primary execute-script" data-script="{{ script_name }}">Execute</button>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                <div class="card-footer">
+                    <a href="{{ url_for('control.light') }}" class="btn btn-primary">Open Light Controls</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0">System Control</h5>
+                </div>
+                <div class="card-body">
+                    <p>Manage system functions, scheduling, and operations.</p>
+                    <ul class="list-group">
+                        {% for script_name, script_info in scripts_by_category.system.items() %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            {{ script_info.description }}
+                            <button class="btn btn-sm btn-primary execute-script" data-script="{{ script_name }}">Execute</button>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                <div class="card-footer">
+                    <a href="{{ url_for('control.system') }}" class="btn btn-primary">Open System Controls</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0">Power Management</h5>
+                </div>
+                <div class="card-body">
+                    <p>Control power settings, monitor consumption, and manage energy usage.</p>
+                    <ul class="list-group">
+                        {% for script_name, script_info in scripts_by_category.power.items() %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            {{ script_info.description }}
+                            <button class="btn btn-sm btn-primary execute-script" data-script="{{ script_name }}">Execute</button>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                <div class="card-footer">
+                    <a href="{{ url_for('control.power') }}" class="btn btn-primary">Open Power Controls</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script Execution Modal -->
+    <div class="modal fade" id="executionModal" tabindex="-1" aria-labelledby="executionModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="executionModalLabel">Script Execution</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="execution-status">Executing script...</div>
+                    <div class="mt-3">
+                        <h6>Output:</h6>
+                        <pre id="execution-output" class="p-2 bg-light"></pre>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle script execution
+    document.querySelectorAll('.execute-script').forEach(function(button) {
+        button.addEventListener('click', function() {
+            const scriptName = this.dataset.script;
+            const modal = new bootstrap.Modal(document.getElementById('executionModal'));
+            
+            // Show modal
+            modal.show();
+            
+            // Update modal title
+            document.getElementById('executionModalLabel').textContent = 'Executing: ' + scriptName;
+            document.getElementById('execution-status').textContent = 'Executing script...';
+            document.getElementById('execution-output').textContent = '';
+            
+            // Execute script
+            fetch('/control/execute/' + scriptName, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    parameters: []
+                }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('execution-status').textContent = 'Script executed successfully';
+                    document.getElementById('execution-status').className = 'text-success';
+                    document.getElementById('execution-output').textContent = data.output || 'No output';
+                } else {
+                    document.getElementById('execution-status').textContent = 'Script execution failed';
+                    document.getElementById('execution-status').className = 'text-danger';
+                    document.getElementById('execution-output').textContent = data.error || 'Unknown error';
+                }
+            })
+            .catch(error => {
+                document.getElementById('execution-status').textContent = 'Error: ' + error.message;
+                document.getElementById('execution-status').className = 'text-danger';
+            });
+        });
+    });
+});
+</script>
+{% endblock %}

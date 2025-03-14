@@ -30,6 +30,7 @@ def create_app(test_config=None):
         DATABASE=os.path.join(app.instance_path, 'creaturebox.sqlite'),
         CREATUREBOX_PASSWORD=os.environ.get('CREATUREBOX_PASSWORD', 'creaturebox'),
         MAX_CONTENT_LENGTH=16 * 1024 * 1024,  # 16 MB max upload size
+        BASE_DIR=os.path.abspath(os.path.dirname(os.path.dirname(__file__)))  # Add base directory for script execution
     )
     
     # Load test config if passed in
@@ -61,6 +62,10 @@ def create_app(test_config=None):
     
     from app.photos import bp as photos_bp
     app.register_blueprint(photos_bp, url_prefix='/photos')
+    
+    # Initialize control module
+    from app.control import init_app as init_control
+    init_control(app)
     
     # Set up logging
     if not app.debug:

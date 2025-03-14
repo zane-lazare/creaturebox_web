@@ -188,7 +188,8 @@ def get_script_path(script_name):
     if script_name not in SCRIPT_INVENTORY:
         raise ValueError(f"Script '{script_name}' not found in inventory")
         
-    base_dir = current_app.config.get('BASE_DIR', os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
+    # Use the installed location in /opt/creaturebox_web
+    base_dir = "/opt/creaturebox_web"
     relative_path = SCRIPT_INVENTORY[script_name]['path']
     
     return os.path.join(base_dir, relative_path)

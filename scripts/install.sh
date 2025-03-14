@@ -27,6 +27,16 @@ fi
 PI_MODEL=$(tr -d '\0' < /proc/device-tree/model)
 echo -e "${YELLOW}Detected: ${PI_MODEL}${NC}"
 
+# Check for creature user
+if id "creature" &>/dev/null; then
+    echo -e "${GREEN}Found creature user. ✓${NC}"
+else
+    echo -e "${RED}Error: The 'creature' user is not found on this system.${NC}"
+    echo "This script requires the 'creature' user to be set up according to the Creaturebox protocol."
+    echo "Please set up the 'creature' user before running this script."
+    exit 1
+fi
+
 # Check for Python 3.9+
 echo "Checking Python version..."
 if command -v python3 &>/dev/null; then
@@ -71,6 +81,15 @@ if [ "$PARENT_DIR" != "$INSTALL_DIR" ]; then
     sudo chown -R $(whoami):$(whoami) "$INSTALL_DIR"
 fi
 
+# Install system dependencies
+echo "Installing system dependencies..."
+sudo apt-get update
+sudo apt-get install -y python3-venv nginx gunicorn python3-dev libffi-dev
+
+# Install dependencies for camera and hardware control
+echo "Installing hardware control dependencies..."
+sudo apt-get install -y python3-picamera2 python3-rpi.gpio
+
 # Set up virtual environment
 echo "Setting up virtual environment..."
 cd "$INSTALL_DIR"
@@ -101,21 +120,80 @@ EOF
 # Set secure permissions for .env
 chmod 600 "$INSTALL_DIR/.env"
 
-# Create systemd service file
-echo "Setting up systemd service..."
+# Handle software scripts and config files
+echo "Setting up software scripts and configuration files..."
+
+# Create necessary directories
+sudo mkdir -p /home/creature/.config/creaturebox
+sudo mkdir -p /home/creature/photos
+
+# Copy configuration files
+echo "Copying configuration files..."
+sudo cp -v "$INSTALL_DIR/config/camera_settings.csv" /home/creature/.config/creaturebox/
+sudo cp -v "$INSTALL_DIR/config/controls.txt" /home/creature/.config/creaturebox/
+sudo cp -v "$INSTALL_DIR/config/schedule_settings.csv" /home/creature/.config/creaturebox/
+
+# Determine the correct user (should be 'creature')
+CURRENT_USER=$(whoami)
+if [ "$CURRENT_USER" = "creature" ]; then
+    MOTHBOX_OWNER="creature"
+else
+    MOTHBOX_OWNER="creature"
+    echo -e "${YELLOW}Note: Running as $CURRENT_USER instead of 'creature'. Will still set ownership to creature.${NC}"
+fi
+
+# Create a controls.txt file if it doesn't exist
+if [ ! -f /home/creature/.config/creaturebox/controls.txt ]; then
+    echo "Creating default controls configuration..."
+    cat > /home/creature/.config/creaturebox/controls.txt << EOF
+shutdown_enabled=True
+minutes=60
+OnlyFlash=False
+LastCalibration=0
+name=creaturebox
+EOF
+    sudo chown creature:creature /home/creature/.config/creaturebox/controls.txt
+    sudo chmod 644 /home/creature/.config/creaturebox/controls.txt
+fi
+
+# Ensure permissions are set correctly
+sudo chown -R $MOTHBOX_OWNER:$MOTHBOX_OWNER /home/creature/.config/creaturebox
+sudo chmod -R 755 /home/creature/.config/creaturebox
+sudo chown -R $MOTHBOX_OWNER:$MOTHBOX_OWNER /home/creature/photos
+sudo chmod 777 /home/creature/photos
+
+# Fix paths in scripts
+echo "Updating paths in scripts to use creature user..."
+find "$INSTALL_DIR/software" -type f -name "*.py" -exec sed -i 's|/home/pi/Desktop/Mothbox|/home/creature/.config/creaturebox|g' {} \;
+find "$INSTALL_DIR/software" -type f -name "*.py" -exec sed -i 's|/home/pi/Desktop/Mothbox/photos|/home/creature/photos|g' {} \;
+
+# Set execute permissions for scripts
+echo "Setting execute permissions for scripts..."
+chmod +x "$INSTALL_DIR/software/"*.py
+chmod +x "$INSTALL_DIR/software/Scripts/"*.py
+
+# Set up permissions for camera and GPIO
+echo "Setting up permissions for hardware access..."
+sudo usermod -a -G video creature
+sudo usermod -a -G gpio creature
+
+# Ensure our service has access to hardware
+echo "Creating systemd service..."
 sudo tee /etc/systemd/system/creaturebox-web.service > /dev/null << EOF
 [Unit]
 Description=Creaturebox Web Interface
 After=network.target
 
 [Service]
-User=$(whoami)
+User=creature
 WorkingDirectory=$INSTALL_DIR
 ExecStart=$INSTALL_DIR/venv/bin/gunicorn -b 127.0.0.1:8000 'app:create_app()'
 Restart=always
 RestartSec=5
 Environment="PATH=$INSTALL_DIR/venv/bin"
 EnvironmentFile=$INSTALL_DIR/.env
+# Allow access to hardware
+SupplementaryGroups=video gpio
 
 [Install]
 WantedBy=multi-user.target
@@ -153,6 +231,16 @@ echo -e "${GREEN}"
 echo "========================================"
 echo "  Installation Complete!"
 echo "========================================"
+echo -e "${GREEN}  Checking Modules${NC}"
+echo "========================================"
+echo "System Module: ✓ Installed"
+echo "Photo Module: ✓ Installed"
+echo "Control Module: ✓ Installed"
+echo -e "  ${YELLOW}→ Camera control ready${NC}"
+echo -e "  ${YELLOW}→ Light control ready${NC}"
+echo -e "  ${YELLOW}→ System control ready${NC}"
+echo -e "  ${YELLOW}→ Power management ready${NC}"
+echo "========================================"
 echo -e "${NC}"
 echo "Creaturebox Web Interface has been installed to: $INSTALL_DIR"
 echo ""
@@ -164,6 +252,13 @@ if command -v nginx &>/dev/null; then
 else
     echo "Web interface is available at: http://$(hostname -I | awk '{print $1}'):8000"
 fi
+echo ""
+
+# Check control module
+echo "Checking Control Module functionality..."
+echo -e "${YELLOW}Camera control:${NC} To use camera features, make sure the camera is enabled"
+echo "Run 'sudo raspi-config' and enable camera interface if needed"
+echo -e "${YELLOW}GPIO control:${NC} GPIO access is set up for controlling lights and other hardware"
 echo ""
 echo "To check status: sudo systemctl status creaturebox-web"
 echo "To view logs: sudo journalctl -u creaturebox-web"

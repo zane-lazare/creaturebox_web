@@ -65,7 +65,7 @@ def get_camera_settings():
     """
     try:
         base_dir = current_app.config.get('BASE_DIR')
-        settings_path = os.path.join(base_dir, 'config', 'camera_settings.csv')
+        settings_path = os.path.join('/home/creature/.config/creaturebox', 'camera_settings.csv')
         
         if not os.path.exists(settings_path):
             logger.error(f"Camera settings file not found: {settings_path}")

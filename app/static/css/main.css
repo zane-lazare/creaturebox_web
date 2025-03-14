@@ -179,6 +179,14 @@ button:disabled, .btn:disabled {
   font-weight: 500;
 }
 
+.dropdown > a:after {
+  content: '▼';
+  font-size: 0.5em;
+  vertical-align: middle;
+  margin-left: 5px;
+  opacity: 0.7;
+}
+
 .main-nav a:hover {
   color: var(--primary-color);
 }
@@ -214,9 +222,10 @@ button:disabled, .btn:disabled {
   background-color: var(--input-background);
 }
 
-.dropdown:hover .dropdown-menu {
+/* No longer needed, now handled by JavaScript */
+/* .dropdown:hover .dropdown-menu {
   display: block;
-}
+} */
 
 .main-content {
   flex: 1;

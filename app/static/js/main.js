@@ -14,11 +14,12 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
   
-  // Handle dropdowns on mobile
+  // Handle dropdowns
   const dropdowns = document.querySelectorAll('.dropdown');
   
-  if (window.innerWidth <= 768) {
-    dropdowns.forEach(dropdown => {
+  dropdowns.forEach(dropdown => {
+    if (window.innerWidth <= 768) {
+      // Mobile dropdown behavior
       const link = dropdown.querySelector('a');
       link.addEventListener('click', function(e) {
         e.preventDefault();
@@ -27,8 +28,23 @@ document.addEventListener('DOMContentLoaded', function() {
           menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
         }
       });
-    });
-  }
+    } else {
+      // Desktop dropdown behavior
+      dropdown.addEventListener('mouseenter', function() {
+        const menu = this.querySelector('.dropdown-menu');
+        if (menu) {
+          menu.style.display = 'block';
+        }
+      });
+      
+      dropdown.addEventListener('mouseleave', function() {
+        const menu = this.querySelector('.dropdown-menu');
+        if (menu) {
+          menu.style.display = 'none';
+        }
+      });
+    }
+  });
   
   // Flash message close button
   const closeButtons = document.querySelectorAll('.flash-message .close');

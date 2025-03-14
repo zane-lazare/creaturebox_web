@@ -18,15 +18,21 @@ from werkzeug.utils import secure_filename
 from flask import current_app, abort
 
 # Try to import PIL for image processing
+Image = None
+ExifTags = None
 try:
-    from PIL import Image, ExifTags
+    from PIL import Image as PILImage, ExifTags as PILExifTags
+    Image = PILImage
+    ExifTags = PILExifTags
     PIL_AVAILABLE = True
 except ImportError:
     PIL_AVAILABLE = False
 
 # Try to import exifread for metadata extraction
+exifread = None
 try:
-    import exifread
+    import exifread as exifread_module
+    exifread = exifread_module
     EXIFREAD_AVAILABLE = True
 except ImportError:
     EXIFREAD_AVAILABLE = False
@@ -46,6 +52,8 @@ THUMBNAIL_QUALITY = 85
 
 def ensure_thumbnail_dir():
     """Ensure the thumbnail directory exists."""
+    global THUMBNAIL_DIR
+
     try:
         # Create main thumbnail directory
         os.makedirs(THUMBNAIL_DIR, exist_ok=True)
@@ -66,7 +74,6 @@ def ensure_thumbnail_dir():
     except Exception as e:
         logger.error(f"Error creating thumbnail directories: {str(e)}")
         # Fallback to a temporary directory if we can't create the intended one
-        global THUMBNAIL_DIR
         THUMBNAIL_DIR = os.path.join('/tmp', 'creaturebox_thumbnails')
         os.makedirs(THUMBNAIL_DIR, exist_ok=True)
         os.makedirs(os.path.join(THUMBNAIL_DIR, 'small'), exist_ok=True)
@@ -213,7 +220,7 @@ def create_thumbnail(image_path: str, thumbnail_path: str, size: Tuple[int, int]
     Raises:
         Exception: If thumbnail creation fails
     """
-    if not PIL_AVAILABLE:
+    if not PIL_AVAILABLE or Image is None:
         raise ImportError("Pillow is required for thumbnail generation")
     
     os.makedirs(os.path.dirname(thumbnail_path), exist_ok=True)
@@ -222,17 +229,18 @@ def create_thumbnail(image_path: str, thumbnail_path: str, size: Tuple[int, int]
         with Image.open(image_path) as img:
             # Preserve orientation from EXIF if available
             try:
-                for orientation in ExifTags.TAGS.keys():
-                    if ExifTags.TAGS[orientation] == 'Orientation':
-                        break
-                
-                exif = dict(img._getexif().items())
-                if exif[orientation] == 3:
-                    img = img.rotate(180, expand=True)
-                elif exif[orientation] == 6:
-                    img = img.rotate(270, expand=True)
-                elif exif[orientation] == 8:
-                    img = img.rotate(90, expand=True)
+                if ExifTags is not None:
+                    for orientation in ExifTags.TAGS.keys():
+                        if ExifTags.TAGS[orientation] == 'Orientation':
+                            break
+                    
+                    exif = dict(img._getexif().items())
+                    if exif[orientation] == 3:
+                        img = img.rotate(180, expand=True)
+                    elif exif[orientation] == 6:
+                        img = img.rotate(270, expand=True)
+                    elif exif[orientation] == 8:
+                        img = img.rotate(90, expand=True)
             except (AttributeError, KeyError, IndexError, TypeError):
                 # No EXIF data available or no orientation tag
                 pass
@@ -270,7 +278,7 @@ def get_image_metadata(image_path: str) -> Dict[str, Any]:
     }
     
     # Get basic image info using Pillow
-    if PIL_AVAILABLE:
+    if PIL_AVAILABLE and Image is not None:
         try:
             with Image.open(image_path) as img:
                 metadata['dimensions'] = img.size
@@ -280,7 +288,7 @@ def get_image_metadata(image_path: str) -> Dict[str, Any]:
             logger.warning(f"Error reading image info with Pillow: {str(e)}")
     
     # Get EXIF data using exifread
-    if EXIFREAD_AVAILABLE:
+    if EXIFREAD_AVAILABLE and exifread is not None:
         try:
             with open(image_path, 'rb') as f:
                 tags = exifread.process_file(f, details=False)

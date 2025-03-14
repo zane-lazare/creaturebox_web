@@ -13,6 +13,7 @@ import json
 from flask import current_app
 
 from .script_executor import execute_script
+from app.utils.paths import get_camera_settings_path
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -64,8 +65,7 @@ def get_camera_settings():
         dict: Dictionary of camera settings or None if file can't be read
     """
     try:
-        base_dir = current_app.config.get('BASE_DIR')
-        settings_path = os.path.join('/home/creature/.config/creaturebox', 'camera_settings.csv')
+        settings_path = get_camera_settings_path()
         
         if not os.path.exists(settings_path):
             logger.error(f"Camera settings file not found: {settings_path}")

@@ -10,6 +10,8 @@ import json
 from pathlib import Path
 from flask import current_app
 
+from app.utils.paths import get_app_root, get_script_path as get_script_path_util
+
 # Define script categories
 SCRIPT_CATEGORIES = {
     "camera": "Camera control scripts",
@@ -188,11 +190,16 @@ def get_script_path(script_name):
     if script_name not in SCRIPT_INVENTORY:
         raise ValueError(f"Script '{script_name}' not found in inventory")
         
-    # Use the installed location in /opt/creaturebox_web
-    base_dir = "/opt/creaturebox_web"
+    # Try to use the utility function from paths module
+    script_path = get_script_path_util(script_name)
+    if script_path and os.path.exists(script_path):
+        return script_path
+    
+    # Fallback to the inventory path
+    app_root = get_app_root()
     relative_path = SCRIPT_INVENTORY[script_name]['path']
     
-    return os.path.join(base_dir, relative_path)
+    return os.path.join(app_root, relative_path)
 
 def get_scripts_by_category(category=None):
     """

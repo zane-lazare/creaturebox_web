@@ -125,7 +125,7 @@ echo "Setting up software scripts and configuration files..."
 
 # Create necessary directories
 sudo mkdir -p /home/creature/.config/creaturebox
-sudo mkdir -p /home/creature/photos
+sudo mkdir -p /home/creature/creaturebox_photos
 
 # Copy configuration files
 echo "Copying configuration files..."
@@ -159,13 +159,13 @@ fi
 # Ensure permissions are set correctly
 sudo chown -R $MOTHBOX_OWNER:$MOTHBOX_OWNER /home/creature/.config/creaturebox
 sudo chmod -R 755 /home/creature/.config/creaturebox
-sudo chown -R $MOTHBOX_OWNER:$MOTHBOX_OWNER /home/creature/photos
-sudo chmod 777 /home/creature/photos
+sudo chown -R $MOTHBOX_OWNER:$MOTHBOX_OWNER /home/creature/creaturebox_photos
+sudo chmod 777 /home/creature/creaturebox_photos
 
 # Fix paths in scripts
 echo "Updating paths in scripts to use creature user..."
 find "$INSTALL_DIR/software" -type f -name "*.py" -exec sed -i 's|/home/pi/Desktop/Mothbox|/home/creature/.config/creaturebox|g' {} \;
-find "$INSTALL_DIR/software" -type f -name "*.py" -exec sed -i 's|/home/pi/Desktop/Mothbox/photos|/home/creature/photos|g' {} \;
+find "$INSTALL_DIR/software" -type f -name "*.py" -exec sed -i 's|/home/pi/Desktop/Mothbox/photos|/home/creature/creaturebox_photos|g' {} \;
 
 # Set execute permissions for scripts
 echo "Setting execute permissions for scripts..."
@@ -225,6 +225,12 @@ fi
 echo "Enabling and starting service..."
 sudo systemctl enable creaturebox-web.service
 sudo systemctl start creaturebox-web.service
+
+# Validate paths
+echo "Validating path configuration..."
+cd "$INSTALL_DIR"
+source venv/bin/activate
+python scripts/validate_paths.py --verbose --fix
 
 # Print success message
 echo -e "${GREEN}"

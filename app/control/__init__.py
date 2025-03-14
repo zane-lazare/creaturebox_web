@@ -78,7 +78,7 @@ def power():
     return render_template('control/power.html', 
                           power_scripts=power_scripts)
 
-@control_bp.route('/execute/<script_name>', methods=['POST'])
+@control_bp.route('/execute/<script_name>', methods=['POST', 'GET'])
 def execute(script_name):
     """
     Execute a script and return the result.
@@ -89,10 +89,18 @@ def execute(script_name):
         "async": true/false (optional, default is false)
     }
     """
+    logger.info(f"Received request to execute script: {script_name}")
+    print(f"[DEBUG] Received request to execute script: {script_name}")
     # Get script info
     script_info = get_script_info(script_name)
     if not script_info:
-        abort(404, f"Script '{script_name}' not found")
+        error_msg = f"Script '{script_name}' not found in inventory"
+        logger.error(error_msg)
+        print(f"[ERROR] {error_msg}")
+        return jsonify({
+            'success': False,
+            'error': error_msg
+        }), 404
     
     # Parse request
     data = request.get_json() or {}
@@ -136,11 +144,21 @@ def execute(script_name):
                     'execution_time': result.execution_time
                 }), 500  # Internal server error
     
-    except Exception as e:
-        logger.exception(f"Error executing script '{script_name}'")
+    except FileNotFoundError as e:
+        error_msg = f"Script file not found: {str(e)}"
+        logger.exception(error_msg)
+        print(f"[ERROR] {error_msg}")
         return jsonify({
             'success': False,
-            'error': str(e)
+            'error': error_msg
+        }), 404
+    except Exception as e:
+        error_msg = f"Error executing script '{script_name}': {str(e)}"
+        logger.exception(error_msg)
+        print(f"[ERROR] {error_msg}")
+        return jsonify({
+            'success': False,
+            'error': error_msg
         }), 500
 
 @control_bp.route('/running')
@@ -150,6 +168,54 @@ def running_scripts():
     return jsonify({
         'running_scripts': running
     })
+
+# Development test route to diagnose script execution
+@control_bp.route('/test_camera')
+def test_camera():
+    """Development test endpoint for camera functionality."""
+    try:
+        # Try to directly execute the camera script
+        import subprocess
+        import sys
+        import os
+        
+        # Get repository root
+        from app.utils.paths import get_app_root
+        repo_root = get_app_root()
+        
+        # Construct script path
+        script_path = os.path.join(repo_root, 'software', 'TakePhoto.py')
+        print(f"[DEBUG] Testing direct script execution at: {script_path}")
+        
+        if not os.path.exists(script_path):
+            return jsonify({
+                'success': False,
+                'error': f"Script not found at: {script_path}"
+            })
+        
+        # Get Python executable
+        python_exe = sys.executable
+        
+        # Execute directly
+        result = subprocess.run(
+            [python_exe, script_path],
+            capture_output=True,
+            text=True,
+            timeout=30
+        )
+        
+        return jsonify({
+            'success': result.returncode == 0,
+            'stdout': result.stdout,
+            'stderr': result.stderr,
+            'return_code': result.returncode,
+        })
+    
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        })
 
 def init_app(app):
     """Initialize the control module with the Flask app."""

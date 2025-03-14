@@ -27,7 +27,7 @@ SCRIPT_INVENTORY = {
     "TakePhoto.py": {
         "category": "camera",
         "description": "Takes a photo with the current camera settings",
-        "path": "software/TakePhoto.py",
+        "path": "software/TakePhoto.py",  # Path relative to app root
         "requires_sudo": True,
         "timeout": 60,  # Seconds
         "parameters": [],

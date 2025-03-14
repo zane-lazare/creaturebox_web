@@ -21,6 +21,7 @@ from .script_executor import (
     get_running_scripts,
     ScriptExecutionError
 )
+from .camera_utils import check_camera_status, get_camera_settings
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -38,7 +39,18 @@ def index():
                               for category in SCRIPT_CATEGORIES
                           })
 
-@control_bp.route('/camera')
+@control_bp.route('/camera/status')
+def camera_status():
+    """Get camera status and information."""
+    status = check_camera_status()
+    settings = get_camera_settings()
+    
+    return jsonify({
+        'camera': status,
+        'settings': settings
+    })
+
+@control_bp.route('/camera', methods=['GET'])
 def camera():
     """Camera control interface."""
     camera_scripts = get_scripts_by_category('camera')

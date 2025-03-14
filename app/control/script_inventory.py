@@ -37,6 +37,20 @@ SCRIPT_INVENTORY = {
         ]
     },
     
+    "CheckCamera.py": {
+        "category": "camera",
+        "description": "Check if the camera is available and working",
+        "path": "software/CheckCamera.py",
+        "requires_sudo": True,
+        "timeout": 10,  # Seconds
+        "parameters": [],
+        "output_pattern": None,  # Outputs JSON
+        "success_pattern": None,  # Success determined by JSON parsing
+        "error_patterns": [
+            r"Error:"
+        ]
+    },
+    
     # Light Control Scripts
     "Attract_On.py": {
         "category": "light",

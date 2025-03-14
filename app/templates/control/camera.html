@@ -106,6 +106,10 @@
                             <div class="status-indicator" id="camera-status"></div>
                             <span id="camera-status-text">Unknown</span>
                         </div>
+                        <small id="camera-model" class="text-muted d-block mt-1"></small>
+                        <button id="check-camera-btn" class="btn btn-sm btn-outline-secondary mt-2">
+                            <i class="bi bi-arrow-clockwise"></i> Check Camera
+                        </button>
                     </div>
                     
                     <div class="mb-3">
@@ -193,6 +197,117 @@
 {% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Handle check camera button
+    document.getElementById('check-camera-btn').addEventListener('click', function() {
+        this.disabled = true;
+        this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Checking...';
+        
+        // Check camera status
+        fetch('/control/camera/status')
+            .then(response => response.json())
+            .then(data => {
+                // Update camera status indicator
+                const statusIndicator = document.getElementById('camera-status');
+                const statusText = document.getElementById('camera-status-text');
+                const modelText = document.getElementById('camera-model');
+                
+                if (data.camera.available) {
+                    statusIndicator.classList.add('active');
+                    statusIndicator.classList.remove('error');
+                    statusText.textContent = 'Connected';
+                    
+                    if (data.camera.model) {
+                        modelText.textContent = data.camera.model;
+                    } else {
+                        modelText.textContent = 'Camera detected (model unknown)';
+                    }
+                    
+                    // Update settings if available
+                    if (data.settings) {
+                        updateSettingsForm(data.settings);
+                    }
+                } else {
+                    statusIndicator.classList.remove('active');
+                    statusIndicator.classList.add('error');
+                    statusText.textContent = 'Not connected';
+                    modelText.textContent = data.camera.error || 'Camera not available';
+                }
+                
+                // Re-enable button
+                this.disabled = false;
+                this.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Check Camera';
+            })
+            .catch(error => {
+                console.error('Error checking camera status:', error);
+                const statusIndicator = document.getElementById('camera-status');
+                const statusText = document.getElementById('camera-status-text');
+                
+                statusIndicator.classList.remove('active');
+                statusIndicator.classList.add('error');
+                statusText.textContent = 'Error';
+                document.getElementById('camera-model').textContent = 'Error checking camera status';
+                
+                // Re-enable button
+                this.disabled = false;
+                this.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Check Camera';
+            });
+    });
+    
+    // Function to update settings form with values from server
+    function updateSettingsForm(settings) {
+        if (settings.HDR) {
+            const hdrSelect = document.getElementById('hdr-mode');
+            if (hdrSelect) {
+                // Find option with matching value
+                const options = hdrSelect.options;
+                for (let i = 0; i < options.length; i++) {
+                    if (options[i].value == settings.HDR) {
+                        hdrSelect.selectedIndex = i;
+                        break;
+                    }
+                }
+            }
+        }
+        
+        if (settings.ExposureTime) {
+            const exposureInput = document.getElementById('exposure-time');
+            if (exposureInput) {
+                exposureInput.value = settings.ExposureTime;
+            }
+        }
+        
+        if (settings.LensPosition) {
+            const lensInput = document.getElementById('lens-position');
+            if (lensInput) {
+                lensInput.value = settings.LensPosition;
+            }
+        }
+        
+        if (settings.AnalogueGain) {
+            const gainInput = document.getElementById('analogue-gain');
+            if (gainInput) {
+                gainInput.value = settings.AnalogueGain;
+            }
+        }
+        
+        if (settings.VerticalFlip !== undefined) {
+            const flipInput = document.getElementById('vertical-flip');
+            if (flipInput) {
+                flipInput.checked = settings.VerticalFlip == 1;
+            }
+        }
+        
+        if (settings.AutoCalibration !== undefined) {
+            const calibInput = document.getElementById('auto-calibration');
+            if (calibInput) {
+                calibInput.checked = settings.AutoCalibration == 1;
+            }
+        }
+    }
+    
+    // Check camera status on page load
+    document.getElementById('check-camera-btn').click();
+    
     // Handle take photo button
     document.getElementById('take-photo-btn').addEventListener('click', function() {
         executeScript('TakePhoto.py', 'Taking photo...');

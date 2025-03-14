@@ -18,43 +18,6 @@ try:
 except ImportError:
     PICAMERA_AVAILABLE = False
 
-def check_libcamera():
-    """Check if camera is detected using libcamera."""
-    try:
-        result = subprocess.run(
-            ["libcamera-hello", "--list-cameras"],
-            capture_output=True,
-            text=True,
-            timeout=5
-        )
-        # If cameras are listed, then at least one camera is available
-        return len(result.stdout.strip()) > 0 and "Available cameras" in result.stdout
-    except Exception as e:
-        print(f"Error checking camera with libcamera: {e}", file=sys.stderr)
-        return False
-
-def check_picamera():
-    """Check if camera can be initialized with picamera2."""
-    if not PICAMERA_AVAILABLE:
-        return False
-    
-    try:
-        # Try to initialize camera
-        picam2 = Picamera2()
-        
-        # If we got here, camera is available
-        camera_available = True
-        camera_model = picam2.camera_properties.get('Model', 'Unknown')
-        
-        # Clean up
-        picam2.close()
-        
-        print(f"Camera detected via picamera2: {camera_model}")
-        return camera_available, camera_model
-    except Exception as e:
-        print(f"Error initializing camera with picamera2: {e}", file=sys.stderr)
-        return False, None
-
 def get_camera_info():
     """Get detailed camera information."""
     info = {
@@ -63,37 +26,42 @@ def get_camera_info():
         "error": None
     }
     
-    # Check with libcamera first for Pi 5 compatibility
-    libcamera_available = check_libcamera()
-    
-    # Then check with picamera2 if available
+    # Check with picamera2 if available
     if PICAMERA_AVAILABLE:
         try:
+            # Try to initialize camera
             picam2 = Picamera2()
-            info["available"] = True  # If we got here without exception, camera is available
+            
+            # If we got this far without an exception, the camera is available
+            info["available"] = True
+            
+            # Get model information
             properties = picam2.camera_properties
             info["model"] = properties.get("Model", "Unknown Camera")
+            
+            # Debug output to stderr
+            print(f"Camera detected successfully: {info['model']}", file=sys.stderr)
+            
+            # Clean up
             picam2.close()
         except Exception as e:
-            if libcamera_available:
-                # Camera was detected with libcamera but not picamera2
-                info["error"] = f"Camera detected but could not be initialized: {e}"
-            else:
-                info["error"] = f"Camera not detected: {e}"
-                info["available"] = False
+            info["error"] = f"Error initializing camera: {str(e)}"
+            print(f"Error initializing camera: {e}", file=sys.stderr)
     else:
-        if libcamera_available:
-            info["available"] = True
-            info["model"] = "Unknown Camera (detected via libcamera)"
-        else:
-            info["error"] = "Camera not detected and picamera2 module not available"
-            info["available"] = False
+        info["error"] = "Picamera2 module not available"
+        print("Picamera2 module not available", file=sys.stderr)
     
     return info
 
 if __name__ == "__main__":
     try:
         info = get_camera_info()
+        
+        # Force available to True if we have a camera model
+        if info["model"] and not info["available"]:
+            print(f"Camera model detected ({info['model']}), forcing available=True", file=sys.stderr)
+            info["available"] = True
+        
         # Output as JSON for easy parsing
         print(json.dumps(info))
     except Exception as e:

@@ -90,13 +90,11 @@ def execute(script_name):
     }
     """
     logger.info(f"Received request to execute script: {script_name}")
-    print(f"[DEBUG] Received request to execute script: {script_name}")
     # Get script info
     script_info = get_script_info(script_name)
     if not script_info:
         error_msg = f"Script '{script_name}' not found in inventory"
         logger.error(error_msg)
-        print(f"[ERROR] {error_msg}")
         return jsonify({
             'success': False,
             'error': error_msg
@@ -147,7 +145,6 @@ def execute(script_name):
     except FileNotFoundError as e:
         error_msg = f"Script file not found: {str(e)}"
         logger.exception(error_msg)
-        print(f"[ERROR] {error_msg}")
         return jsonify({
             'success': False,
             'error': error_msg
@@ -155,7 +152,6 @@ def execute(script_name):
     except Exception as e:
         error_msg = f"Error executing script '{script_name}': {str(e)}"
         logger.exception(error_msg)
-        print(f"[ERROR] {error_msg}")
         return jsonify({
             'success': False,
             'error': error_msg

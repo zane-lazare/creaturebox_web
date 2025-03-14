@@ -69,10 +69,8 @@ def execute_script(script_name, parameters=None, working_dir=None, timeout=None)
         
     # Get absolute script path
     script_path = get_script_path(script_name)
-    print(f"[DEBUG] Script path for {script_name}: {script_path}")
-    if not os.path.exists(script_path):
-        print(f"[ERROR] Script not found at path: {script_path}")
-        raise FileNotFoundError(f"Script not found at path: {script_path}")
+    if not script_path or not os.path.exists(script_path):
+        raise FileNotFoundError(f"Script not found: {script_name}")
     
     # Use script's timeout if not specified
     if timeout is None:
@@ -98,7 +96,6 @@ def execute_script(script_name, parameters=None, working_dir=None, timeout=None)
     
     # Log the command being executed
     logger.info(f"Executing: {' '.join(command)}")
-    print(f"[DEBUG] Executing: {' '.join(command)}")
     
     # Set working directory
     if not working_dir:

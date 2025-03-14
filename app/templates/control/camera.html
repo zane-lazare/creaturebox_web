@@ -310,36 +310,13 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Handle take photo button
     document.getElementById('take-photo-btn').addEventListener('click', function() {
-        console.log('Take photo button clicked');
-        
-        // First, try the regular script execution
         executeScript('TakePhoto.py', 'Taking photo...');
     });
     
     // Handle calibrate camera button
     document.getElementById('calibrate-camera-btn').addEventListener('click', function() {
-        console.log('Calibrate camera button clicked');
         if (confirm('Calibrating the camera may take a minute or more. Continue?')) {
-            // For development testing, we'll use the test_camera endpoint
             executeScript('TakePhoto.py', 'Calibrating camera...');
-            
-            // Development fallback using direct execution
-            /*
-            fetch('/control/test_camera')
-                .then(response => response.json())
-                .then(data => {
-                    console.log('Direct execution result:', data);
-                    if (data.success) {
-                        alert('Camera calibration successful!');
-                    } else {
-                        alert('Camera calibration failed: ' + (data.error || 'Unknown error'));
-                    }
-                })
-                .catch(error => {
-                    console.error('Error with direct execution:', error);
-                    alert('Error with calibration: ' + error.message);
-                });
-            */
         }
     });
     
@@ -356,7 +333,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     function executeScript(scriptName, statusText) {
-        console.log("Executing script: " + scriptName);
         const modal = new bootstrap.Modal(document.getElementById('executionModal'));
         
         // Show modal
@@ -368,7 +344,6 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('execution-output').textContent = '';
         
         // Execute script
-        console.log('Sending execution request for:', scriptName);
         fetch('/control/execute/' + scriptName, {
             method: 'POST',
             headers: {

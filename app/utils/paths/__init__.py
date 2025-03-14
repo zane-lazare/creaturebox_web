@@ -46,34 +46,19 @@ def get_app_root():
     """
     # Check if running in production at /opt/creaturebox_web
     if os.path.exists(APP_ROOT):
-        print(f"[DEBUG] Found production app root: {APP_ROOT}")
         return APP_ROOT
     
-    # Development fallback - try to detect repository root
+    # Development fallback - find the repository root by traversing up from current file
     current_file = os.path.abspath(__file__)
-    print(f"[DEBUG] Current file path: {current_file}")
     app_utils = os.path.dirname(os.path.dirname(current_file))
     app_dir = os.path.dirname(app_utils)
     repo_root = os.path.dirname(app_dir)
     
-    print(f"[DEBUG] Potential repo root: {repo_root}")
+    # Verify this looks like our repository
     if os.path.exists(os.path.join(repo_root, "app")) and \
        os.path.exists(os.path.join(repo_root, "software")):
         logger.debug(f"Using development path: {repo_root}")
-        print(f"[DEBUG] Using development path: {repo_root}")
         return repo_root
-        
-    # Try a different approach to find repo root - check parent directories
-    potential_root = os.path.abspath(os.getcwd())
-    print(f"[DEBUG] Current working directory: {potential_root}")
-    
-    # Look for repository root by checking for key directories
-    for _ in range(5):  # Check up to 5 parent directories
-        if os.path.exists(os.path.join(potential_root, "app")) and \
-           os.path.exists(os.path.join(potential_root, "software")):
-            print(f"[DEBUG] Found repo root by directory search: {potential_root}")
-            return potential_root
-        potential_root = os.path.dirname(potential_root)
     
     # Last resort - use relative paths from current working directory
     logger.warning("Unable to determine application root, using current directory")
@@ -248,48 +233,25 @@ def get_script_path(script_name):
     Returns:
         str: Full path to the script or None if not found
     """
-    # Print debug info
-    print(f"[DEBUG] Searching for script: {script_name}")
     # Add .py extension if not present
     if not script_name.endswith('.py'):
         script_name += '.py'
-        
-    # Important: Check if we're running in development or production
-    is_development = not os.path.exists(APP_ROOT)
-    print(f"[DEBUG] Running in development mode: {is_development}")
     
-    # Check main software directory
-    if is_development:
-        # In development, try direct path to repository software directory
-        repo_root = get_app_root()
-        script_path = os.path.join(repo_root, "software", script_name)
-    else:
-        script_path = os.path.join(SOFTWARE_DIR, script_name)
-    if os.path.exists(script_path):
-        return script_path
+    # Get the current application root directory
+    app_root = get_app_root()
     
-    # Check Scripts subdirectory
-    script_path = os.path.join(SCRIPTS_DIR, script_name)
-    if os.path.exists(script_path):
-        return script_path
+    # Try standard locations in order of priority
+    locations = [
+        # Direct in software directory
+        os.path.join(app_root, "software", script_name),
+        # In Scripts subdirectory
+        os.path.join(app_root, "software", "Scripts", script_name)
+    ]
     
-    # Additional fallbacks for development
-    if is_development:
-        repo_root = get_app_root()
-        
-        # Try various possible paths in development mode
-        possible_paths = [
-            os.path.join(repo_root, "software", script_name),
-            os.path.join(repo_root, "software", "Scripts", script_name),
-            # Add more possible paths if needed
-        ]
-        
-        print(f"[DEBUG] Checking possible paths: {possible_paths}")
-        
-        for path in possible_paths:
-            if os.path.exists(path):
-                print(f"[DEBUG] Found script at: {path}")
-                return path
+    for location in locations:
+        if os.path.exists(location):
+            logger.debug(f"Found script at: {location}")
+            return location
     
     logger.warning(f"Script not found: {script_name}")
     return None

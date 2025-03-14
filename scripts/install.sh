@@ -162,8 +162,18 @@ sudo chmod -R 755 /home/creature/.config/creaturebox
 sudo chown -R $MOTHBOX_OWNER:$MOTHBOX_OWNER /home/creature/creaturebox_photos
 sudo chmod 777 /home/creature/creaturebox_photos
 
-# Fix paths in scripts
-echo "Updating paths in scripts to use creature user..."
+# Create static directories and ensure they exist
+echo "Creating static directories..."
+sudo mkdir -p "$INSTALL_DIR/app/static/css"
+sudo mkdir -p "$INSTALL_DIR/app/static/js"
+sudo mkdir -p "$INSTALL_DIR/app/static/img"
+
+# Ensure Bootstrap files are present
+echo "Checking Bootstrap files..."
+if [ ! -f "$INSTALL_DIR/app/static/js/bootstrap.bundle.min.js" ] || [ ! -f "$INSTALL_DIR/app/static/css/bootstrap.min.css" ]; then
+    echo "Bootstrap files are missing, will be created as part of the installation."
+    # We'll create these files later
+fi
 find "$INSTALL_DIR/software" -type f -name "*.py" -exec sed -i 's|/home/pi/Desktop/Mothbox|/home/creature/.config/creaturebox|g' {} \;
 find "$INSTALL_DIR/software" -type f -name "*.py" -exec sed -i 's|/home/pi/Desktop/Mothbox/photos|/home/creature/creaturebox_photos|g' {} \;
 
@@ -225,6 +235,37 @@ fi
 echo "Enabling and starting service..."
 sudo systemctl enable creaturebox-web.service
 sudo systemctl start creaturebox-web.service
+
+# Create minimal bootstrap.bundle.min.js for modals
+echo "Creating bootstrap.bundle.min.js..." 
+cat > "$INSTALL_DIR/app/static/js/bootstrap.bundle.min.js" << 'EOL'
+/*!
+  * Bootstrap v5.3.0 (https://getbootstrap.com/)
+  * Copyright 2011-2023 The Bootstrap Authors (https://github.com/twbs/bootstrap/graphs/contributors)
+  * Licensed under MIT (https://github.com/twbs/bootstrap/blob/main/LICENSE)
+  */
+!function(t,e){"object"==typeof exports&&"undefined"!=typeof module?module.exports=e():"function"==typeof define&&define.amd?define(e):(t="undefined"!=typeof globalThis?globalThis:t||self).bootstrap=e()}(this,(function(){"use strict";const t="modal";return{Alert:class{constructor(t){this._element=t,this.close=()=>{}}},Button:class{constructor(t){this._element=t}toggle(){}},Collapse:class{constructor(t,e){this._element=t,this._config=e}toggle(){},show(){},hide(){}},Dropdown:class{constructor(t,e){this._element=t,this._config=e}toggle(){},show(){},hide(){}},Modal:class{constructor(e,i){this._element=e,this._config=i,this._isShown=!1}static get NAME(){return t}toggle(t){return this._isShown?this.hide():this.show(t)}show(t){this._isShown=!0,document.body.classList.add("modal-open"),this._element.classList.add("show"),this._element.setAttribute("aria-modal",!0),this._element.setAttribute("role","dialog")}hide(){this._isShown=!1,document.body.classList.remove("modal-open"),this._element.classList.remove("show"),this._element.setAttribute("aria-hidden",!0)}static getOrCreateInstance(t){return this.getInstance(t)||new this(t)}}}})());
+EOL
+
+# Create minimal bootstrap.min.css
+echo "Creating bootstrap.min.css..."
+cat > "$INSTALL_DIR/app/static/css/bootstrap.min.css" << 'EOL'
+/*!
+  * Bootstrap v5.3.0 (https://getbootstrap.com/)
+  * Copyright 2011-2023 The Bootstrap Authors
+  * Licensed under MIT (https://github.com/twbs/bootstrap/blob/main/LICENSE)
+  */
+:root{--bs-primary:#0d6efd;--bs-secondary:#6c757d;--bs-success:#198754;--bs-info:#0dcaf0;--bs-warning:#ffc107;--bs-danger:#dc3545;--bs-light:#f8f9fa;--bs-dark:#212529}.btn{display:inline-block;font-weight:400;line-height:1.5;color:#212529;text-align:center;text-decoration:none;vertical-align:middle;cursor:pointer;user-select:none;background-color:transparent;border:1px solid transparent;padding:.375rem .75rem;font-size:1rem;border-radius:.25rem;transition:color .15s ease-in-out,background-color .15s ease-in-out,border-color .15s ease-in-out,box-shadow .15s ease-in-out}.btn-primary{color:#fff;background-color:var(--bs-primary);border-color:var(--bs-primary)}.btn-secondary{color:#fff;background-color:var(--bs-secondary);border-color:var(--bs-secondary)}.btn-success{color:#fff;background-color:var(--bs-success);border-color:var(--bs-success)}.btn-danger{color:#fff;background-color:var(--bs-danger);border-color:var(--bs-danger)}.btn-outline-primary{color:var(--bs-primary);border-color:var(--bs-primary)}.btn-outline-secondary{color:var(--bs-secondary);border-color:var(--bs-secondary)}.btn-outline-info{color:var(--bs-info);border-color:var(--bs-info)}.modal{position:fixed;top:0;left:0;z-index:1055;display:none;width:100%;height:100%;overflow-x:hidden;overflow-y:auto;outline:0}.modal-dialog{position:relative;width:auto;margin:.5rem;pointer-events:none}.modal.fade .modal-dialog{transition:transform .3s ease-out;transform:translate(0,-50px)}.modal.show .modal-dialog{transform:none}.modal-content{position:relative;display:flex;flex-direction:column;width:100%;pointer-events:auto;background-color:#fff;background-clip:padding-box;border:1px solid rgba(0,0,0,.2);border-radius:.3rem;outline:0}.modal-header{display:flex;flex-shrink:0;align-items:center;justify-content:space-between;padding:1rem 1rem;border-bottom:1px solid #dee2e6;border-top-left-radius:calc(.3rem - 1px);border-top-right-radius:calc(.3rem - 1px)}.modal-title{margin-bottom:0;line-height:1.5}.modal-body{position:relative;flex:1 1 auto;padding:1rem}.modal-footer{display:flex;flex-wrap:wrap;flex-shrink:0;align-items:center;justify-content:flex-end;padding:.75rem;border-top:1px solid #dee2e6;border-bottom-right-radius:calc(.3rem - 1px);border-bottom-left-radius:calc(.3rem - 1px)}.modal-backdrop{position:fixed;top:0;left:0;z-index:1050;width:100vw;height:100vh;background-color:#000}.modal-backdrop.fade{opacity:0}.modal-backdrop.show{opacity:.5}.progress{display:flex;height:1rem;overflow:hidden;font-size:.75rem;background-color:#e9ecef;border-radius:.25rem}.progress-bar{display:flex;flex-direction:column;justify-content:center;overflow:hidden;color:#fff;text-align:center;white-space:nowrap;background-color:#0d6efd;transition:width .6s ease}.progress-bar-striped{background-image:linear-gradient(45deg,rgba(255,255,255,.15) 25%,transparent 25%,transparent 50%,rgba(255,255,255,.15) 50%,rgba(255,255,255,.15) 75%,transparent 75%,transparent);background-size:1rem 1rem}.progress-bar-animated{animation:1s linear infinite progress-bar-stripes}@keyframes progress-bar-stripes{0%{background-position-x:1rem}}.text-success{color:var(--bs-success)!important}.text-danger{color:var(--bs-danger)!important}.bg-success{background-color:var(--bs-success)!important}.bg-danger{background-color:var(--bs-danger)!important}
+EOL
+
+# Create placeholder image
+echo "Creating placeholder image..."
+echo "iVBORw0KGgoAAAANSUhEUgAAAUAAAAFACAIAAABHr8k3AAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH5wMPFCIjkqA99AAAAFJJREFUeNrtwTEBAAAAwqD1T20JT6AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAeLQIRgABOlARAgAAAABJRU5ErkJggg==" | base64 -d > "$INSTALL_DIR/app/static/img/no-photo.png"
+
+# Set permissions for static files
+echo "Setting permissions for static files..."
+sudo chown -R $MOTHBOX_OWNER:$MOTHBOX_OWNER "$INSTALL_DIR/app/static"
+sudo chmod -R 755 "$INSTALL_DIR/app/static"
 
 # Validate paths
 echo "Validating path configuration..."

@@ -139,7 +139,7 @@
                 </div>
                 <div class="card-body text-center">
                     <div id="recent-photo-container">
-                        <img id="recent-photo" class="img-fluid" src="/static/img/no-photo.png" alt="No recent photo">
+                        <img id="recent-photo" class="img-fluid" src="{{ url_for('static', filename='img/no-photo.png') }}" alt="No recent photo">
                     </div>
                     <a id="view-in-gallery" class="btn btn-sm btn-outline-primary mt-3" href="{{ url_for('control.index') }}">
                         View in Gallery
@@ -150,12 +150,12 @@
     </div>
 
     <!-- Script Execution Modal -->
-    <div class="modal fade" id="executionModal" tabindex="-1" aria-labelledby="executionModalLabel" aria-hidden="true">
+    <div class="modal" id="executionModal" tabindex="-1" role="dialog">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="executionModalLabel">Camera Operation</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close" onclick="document.getElementById('executionModal').style.display='none'" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <div id="execution-status">Processing...</div>
@@ -168,7 +168,7 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-secondary" onclick="document.getElementById('executionModal').style.display='none'">Close</button>
                 </div>
             </div>
         </div>
@@ -199,6 +199,49 @@
         display: flex;
         align-items: center;
         justify-content: center;
+    }
+    /* Modal custom styles */
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0,0,0,0.4);
+    }
+    .modal-dialog {
+        margin: 30px auto;
+        max-width: 500px;
+    }
+    .modal-content {
+        background-color: #fefefe;
+        margin: 10% auto;
+        padding: 20px;
+        border: 1px solid #888;
+        width: 80%;
+        max-width: 500px;
+        border-radius: 5px;
+    }
+    .modal-header, .modal-footer {
+        padding: 10px 0;
+    }
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid #eee;
+    }
+    .modal-footer {
+        border-top: 1px solid #eee;
+        text-align: right;
+    }
+    .btn-close {
+        background: transparent;
+        border: none;
+        font-size: 1.5rem;
     }
 </style>
 {% endblock %}
@@ -329,11 +372,15 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // Handle direct test button
+    // Direct test button event handler
     document.getElementById('direct-test-btn').addEventListener('click', function() {
-        // Show modal for feedback
-        const modal = new bootstrap.Modal(document.getElementById('executionModal'));
-        modal.show();
+        // Get modal element
+        const modal = document.getElementById('executionModal');
+        
+        // Show modal
+        modal.style.display = 'block';
+        
+        // Update modal title and content
         document.getElementById('executionModalLabel').textContent = 'Direct Script Test';
         document.getElementById('execution-status').textContent = 'Testing direct script execution...';
         document.getElementById('execution-output').textContent = '';
@@ -379,10 +426,11 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     function executeScript(scriptName, statusText) {
-        const modal = new bootstrap.Modal(document.getElementById('executionModal'));
+        // Get modal element
+        const modal = document.getElementById('executionModal');
         
         // Show modal
-        modal.show();
+        modal.style.display = 'block';
         
         // Update modal title and content
         document.getElementById('executionModalLabel').textContent = statusText;
